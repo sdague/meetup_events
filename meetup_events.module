@@ -1,0 +1,171 @@
+<?php
+
+/**
+ * @file
+ *
+ * This module allows admins to set recurrent announcements for nodes to send
+ * to specified email addresses.
+ */
+
+
+/**
+ * Implementation of hook_perm()
+ */
+function meetup_events_perm() {
+  return array('administer meetup events');
+}
+
+/**
+ * Implementaiton of hook_menu()
+ */
+function meetup_events_menu() {
+  $items['admin/settings/meetup_events'] = array(
+    'title' => 'Meetup Events',
+    'description' => 'Setup Meetup Event synchronization',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('meetup_events_admin_settings'),
+    'access arguments' => array('administer meetup events'),
+    'type' => MENU_NORMAL_ITEM,
+    'file' => 'meetup_events.admin.inc',
+  );
+  return $items;
+}
+
+/**
+ * Implementation of hook_nodeapi()
+ */
+function meetup_events_nodeapi(&$node, $op, $a3, $a4) {
+  // dprint_r("Op: " . $op);
+  // drupal_set_message(print_r($node, TRUE));
+  if (($op == "insert") || ($op == "update")) {
+    $synctypes = variable_get('meetup_events_node_types', array());
+    if ($synctypes[$node->type]) {
+      meetup_events_sync_event($node);
+    }
+  }
+}
+
+function meetup_events_sync_event(&$node) {
+  $meetupid = meetup_events_get_meetupid($node->nid);
+  if ($meetupid) {
+    meetup_events_update_event($meetupid, $node);
+  } else {
+    meetup_events_create_event($node);
+  }
+
+}
+
+function meetup_events_save_meetupid($nid, $id) {
+  $obj = (object)array(
+    "nid" => $nid,
+    "id" => $id,
+    "last_updated" => time(),
+  );
+  drupal_write_record('meetup_events', $obj);
+}
+
+function meetup_events_get_meetupid($nid) {
+  $event = db_fetch_object(db_query("SELECT id from {meetup_events} where nid=%d", $nid));
+  if (!$event) {
+    return NULL;
+  } else {
+    return $event->id;
+  }
+}
+
+function meetup_events_node_data($node) {
+  // This is a hack, but it works. There should be a way to do timezone
+  // gymnastics on the DateTime field, but I'm not sure what that is yet.
+  $tz = date_default_timezone_get();
+  date_default_timezone_set('UTC');
+
+  $date = new DateTime($node->field_date[0]["value"]);
+
+  $data = array(
+    "key" => variable_get('meetup_events_meetup_key', 0),
+    "group_id" => variable_get('meetup_events_meetup_group', 0),
+    "name" => $node->title,
+    "description" => theme('meetup_events_body', $node),
+    "time" => $date->getTimestamp() * 1000,
+  );
+
+  $venue = theme('meetup_events_meetupid', $node);
+  if ($venue) {
+    $data["venue_id"] = $venue;
+  }
+
+  $request_data = http_build_query($data, '', '&');
+
+  // Make sure to reset the timezone, we really don't want this actually global
+  date_default_timezone_set($tz);
+
+  return $request_data;
+}
+
+function meetup_events_update_event($id, $node) {
+  $request_url = "https://api.meetup.com/2/event/$id";
+  $request_headers = array('Content-Type' => 'application/x-www-form-urlencoded');
+  $request_method = 'POST';
+
+  $data = meetup_events_node_data($node);
+
+  $res = drupal_http_request($request_url, $request_headers, $request_method, $data);
+  $data = json_decode($res->data);
+  if ($data->id) {
+    drupal_set_message("Updated on <a href='" . $data->event_url .  "'>Meetup</a>");
+  } else {
+    drupal_set_message("Failed to update Meetup, you should try again later");
+  }
+}
+
+function meetup_events_create_event($node) {
+  $request_url = "https://api.meetup.com/2/event";
+  $request_headers = array('Content-Type' => 'application/x-www-form-urlencoded');
+  $request_method = 'POST';
+
+  $data = meetup_events_node_data($node);
+
+  $res = drupal_http_request($request_url, $request_headers, $request_method, $data);
+  $data = json_decode($res->data);
+  if ($data->id) {
+    meetup_events_save_meetupid($node->nid, $data->id);
+    drupal_set_message("Saved to <a href='" . $data->event_url .  "'>Meetup</a>");
+  } else {
+    drupal_set_message("Failed to save to Meetup, you should try again later");
+  }
+
+}
+
+/**
+ * You are going to need to modify this theme function for your environment
+ */
+function theme_meetup_events_meetupid($node) {
+  $loc = node_load($node->field_location[0]["nid"]);
+  $venue = $loc->field_meetupvenue[0]["value"];
+  return $venue;
+}
+
+function theme_meetup_events_body($node) {
+  $boilerplate = node_load($node->field_boilerplate[0]["nid"]);
+  $result = $node->body . $boilerplate->body;
+  return $result;
+}
+
+function meetup_events_theme() {
+  $path = drupal_get_path('module', 'meetup_events_theme');
+  $base = array(
+    'path' => "$path/theme"
+  );
+
+  // TODO: get forms in here as well, though I was having an issue getting
+  // them to take parameters as well as the form parameters
+  $themes = array(
+    'meetup_events_meetupip' => array(
+      'arguments' => array('node' => NULL),
+    ),
+    'meetup_events_body' => array(
+      'arguments' => array('node' => NULL)
+    )
+  );
+  return $themes;
+}
