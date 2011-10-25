@@ -79,7 +79,8 @@ function meetup_events_node_data($node) {
   $tz = date_default_timezone_get();
   date_default_timezone_set('UTC');
 
-  $date = new DateTime($node->field_date[0]["value"]);
+  $date = new DateTime(theme('meetup_events_date', $node));
+
 
   $data = array(
     "key" => variable_get('meetup_events_meetup_key', 0),
@@ -89,7 +90,7 @@ function meetup_events_node_data($node) {
     "time" => $date->getTimestamp() * 1000,
   );
 
-  $venue = theme('meetup_events_meetupid', $node);
+  $venue = theme('meetup_events_venueid', $node);
   if ($venue) {
     $data["venue_id"] = $venue;
   }
@@ -139,7 +140,7 @@ function meetup_events_create_event($node) {
 /**
  * You are going to need to modify this theme function for your environment
  */
-function theme_meetup_events_meetupid($node) {
+function theme_meetup_events_venueid($node) {
   $loc = node_load($node->field_location[0]["nid"]);
   $venue = $loc->field_meetupvenue[0]["value"];
   return $venue;
@@ -151,6 +152,10 @@ function theme_meetup_events_body($node) {
   return $result;
 }
 
+function theme_meetup_events_date($node) {
+  return $node->field_date[0]["value"];
+}
+
 function meetup_events_theme() {
   $path = drupal_get_path('module', 'meetup_events_theme');
   $base = array(
@@ -160,10 +165,13 @@ function meetup_events_theme() {
   // TODO: get forms in here as well, though I was having an issue getting
   // them to take parameters as well as the form parameters
   $themes = array(
-    'meetup_events_meetupip' => array(
+    'meetup_events_venueid' => array(
       'arguments' => array('node' => NULL),
     ),
     'meetup_events_body' => array(
+      'arguments' => array('node' => NULL)
+    ),
+    'meetup_events_date' => array(
       'arguments' => array('node' => NULL)
     )
   );
