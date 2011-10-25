@@ -32,14 +32,5 @@ function meetup_events_schema() {
     'primary key' => array('nid'),
   );
 
-  $schema['meetup_events_venues'] = array(
-    'fields' => array(
-      'nid' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE),
-      'id' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE),
-      'last_updated' => array('type' => 'int', 'unsigned' => TRUE, 'not null' => FALSE)
-    ),
-    'primary key' => array('nid')
-  );
-
   return $schema;
 }
