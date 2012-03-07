@@ -92,7 +92,13 @@ function meetup_events_node_data($node) {
 
   $venue = theme('meetup_events_venueid', $node);
   if ($venue) {
-    $data["venue_id"] = $venue;
+    # $venue comes back as a venue_id plus an optional lat, lon
+    $loc = explode(",", $venue);
+    $data["venue_id"] = $loc[0];
+    if ($loc[1] && $loc[2]) {
+      $data["lon"] = $loc[1];
+      $data["lat"] = $loc[2];
+    }
   }
 
   $request_data = http_build_query($data, '', '&');
@@ -141,8 +147,22 @@ function meetup_events_create_event($node) {
  * You are going to need to modify this theme function for your environment
  */
 function theme_meetup_events_venueid($node) {
+  if (! $node->field_location) {
+    return;
+  }
+
   $loc = node_load($node->field_location[0]["nid"]);
+
+  if (!$loc->field_meetupvenue) {
+    return;
+  }
+
   $venue = $loc->field_meetupvenue[0]["value"];
+
+  if ($loc->field_meetuplat && $loc->field_meetuplon) {
+    $venue .= "," . $loc->field_meetuplat[0]["value"] . "," . $loc->field_meetuplon[0]["value"];
+  }
+
   return $venue;
 }
 
