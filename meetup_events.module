@@ -96,8 +96,8 @@ function meetup_events_node_data($node) {
     $loc = explode(",", $venue);
     $data["venue_id"] = $loc[0];
     if ($loc[1] && $loc[2]) {
-      $data["lon"] = $loc[1];
-      $data["lat"] = $loc[2];
+      $data["lat"] = $loc[1];
+      $data["lon"] = $loc[2];
     }
   }
 
