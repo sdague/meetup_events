@@ -111,12 +111,15 @@ function meetup_events_node_data($node) {
 
 function meetup_events_update_event($id, $node) {
   $request_url = "https://api.meetup.com/2/event/$id";
-  $request_headers = array('Content-Type' => 'application/x-www-form-urlencoded');
+  $request_headers = array(
+    'Content-Type' => 'application/x-www-form-urlencoded',
+    'Accept-Charset' => 'utf-8');
   $request_method = 'POST';
 
   $data = meetup_events_node_data($node);
 
   $res = drupal_http_request($request_url, $request_headers, $request_method, $data);
+  # drupal_set_message("Update '" . $res->data . "'");
   $data = json_decode($res->data);
   if ($data->id) {
     drupal_set_message("Updated on <a href='" . $data->event_url .  "'>Meetup</a>");
@@ -127,12 +130,15 @@ function meetup_events_update_event($id, $node) {
 
 function meetup_events_create_event($node) {
   $request_url = "https://api.meetup.com/2/event";
-  $request_headers = array('Content-Type' => 'application/x-www-form-urlencoded');
+  $request_headers = array(
+    'Content-Type' => 'application/x-www-form-urlencoded',
+    'Accept-Charset' => 'utf-8');
   $request_method = 'POST';
 
   $data = meetup_events_node_data($node);
 
   $res = drupal_http_request($request_url, $request_headers, $request_method, $data);
+#  drupal_set_message("Create '" . $res->data . "'");
   $data = json_decode($res->data);
   if ($data->id) {
     meetup_events_save_meetupid($node->nid, $data->id);
