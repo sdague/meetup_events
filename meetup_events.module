@@ -109,6 +109,23 @@ function meetup_events_node_data($node) {
   return $request_data;
 }
 
+function meetup_events_delete_event($id) {
+  $request_url = "https://api.meetup.com/2/event/$id";
+  $request_headers = array(
+    'Content-Type' => 'application/x-www-form-urlencoded',
+    'Accept-Charset' => 'utf-8');
+  $request_method = 'DELETE';
+  $data = array();
+
+  $res = drupal_http_request($request_url, $request_headers, $request_method, $data);
+  # drupal_set_message("Update '" . $res->data . "'");
+  if ($res->data) {
+    drupal_set_message("Deleted event from meetup");
+  } else {
+    drupal_set_message("Failed to delete from Meetup, you should try again later");
+  }
+}
+
 function meetup_events_update_event($id, $node) {
   $request_url = "https://api.meetup.com/2/event/$id";
   $request_headers = array(
