@@ -2,3 +2,5 @@ name = Meetup Events
 description = Synchronize Events to Meetup.com
 core = 6.x
 dependencies[] = 'date'
+dependencies[] = 'ctools'
+
