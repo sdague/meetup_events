@@ -13,34 +13,27 @@
 
 // ctools_include('dependent');
 
-function meetup_events_get_venue_fields_for_type($type) {
-  $fields = array("none" => "Don't sync venue");
+function meetup_events_get_numeric_fields_for_type($type) {
+  $fields = array("none" => "none");
   # first get all number fields that are on the type
   $results = db_query("SELECT c.field_name, c.label from {content_node_field_instance} c INNER JOIN {node_type} n ON c.type_name=n.type where c.widget_module='number' and c.type_name='%s' ORDER BY n.name, c.label", $type);
   while($obj = db_fetch_object($results)) {
     $fields[$obj->field_name] = $obj->label;
   }
+
   # then get all number fields that are on the nodereferences
-  $results = db_query("SELECT c.field_name, c.label from {content_node_field_instance} c INNER JOIN {node_type} n ON c.type_name=n.type where c.widget_module='nodereference' and c.type_name='%s' ORDER BY n.name, c.label", $type);
+  $results = db_query("SELECT c.field_name, c.label, cnf.global_settings from {content_node_field_instance} c INNER JOIN {node_type} n ON c.type_name=n.type INNER JOIN {content_node_field} cnf ON c.field_name=cnf.field_name where c.widget_module='nodereference' and c.type_name='%s' ORDER BY n.name, c.label", $type);
   while($obj = db_fetch_object($results)) {
     $field = $obj->field_name;
     $label = $obj->label;
-    $types = array();
+    $ref_types = unserialize($obj->global_settings);
 
-    # and figure out what node types they can be
-    $type_results = db_query("SELECT * from {content_node_field} where field_name='%s'", $field);
-    while($reftype = db_fetch_object($type_results)) {
-      $ref_types = unserialize($reftype->global_settings);
-
-      // drupal_set_message("<pre>" . print_r($ref_types["referenceable_types"], TRUE) . "</pre>");
-
-      foreach ($ref_types["referenceable_types"] as $key => $value) {
-        if ($value) {
+    foreach ($ref_types["referenceable_types"] as $key => $value) {
+      if ($value) {
         # and then see what numbers they have
-          $ref_results = db_query("SELECT c.field_name, c.label from {content_node_field_instance} c INNER JOIN {node_type} n ON c.type_name=n.type where c.widget_module='number' and c.type_name='%s' ORDER BY n.name, c.label", $key);
-          while($ref = db_fetch_object($ref_results)) {
-            $fields[$field . ":" . $ref->field_name] = $label . " => " . $ref->label;
-          }
+        $ref_results = db_query("SELECT c.field_name, c.label from {content_node_field_instance} c INNER JOIN {node_type} n ON c.type_name=n.type where c.widget_module='number' and c.type_name='%s' ORDER BY n.name, c.label", $key);
+        while($ref = db_fetch_object($ref_results)) {
+          $fields[$field . ":" . $ref->field_name] = $label . " (node ref) => " . $ref->label;
         }
       }
     }
@@ -71,14 +64,11 @@ function meetup_events_get_allowed_types() {
  */
 
 function meetup_events_admin_settings() {
-  // Get an array of node types with internal names as keys and
-  // "friendly names" as values. E.g.,
-  // array('page' => 'Page', 'story' => 'Story')
   ctools_include('dependent');
 
   $options = meetup_events_get_allowed_types();
 
-  $values = variable_get("meetup_events", array());
+  $settings = variable_get("meetup_events", array());
 
   $form["meetup_events"] = array(
     '#type' => 'fieldset',
@@ -92,7 +82,7 @@ function meetup_events_admin_settings() {
     $form["meetup_events"][$type . "_enabled"] = array(
       '#type' => 'checkboxes',
       '#options' => array($type => $name),
-      '#default_value' => $values[$type . "_enabled"],
+      '#default_value' => $settings[$type . "_enabled"],
       # '#description' => t('Only nodes of these types will be synchronized to meetup.
       #Because meetup requires dates, only node types that can support date fields
       #are eligible for syncing.')
@@ -115,22 +105,38 @@ function meetup_events_admin_settings() {
       '#description' => 'Which date field should we use for the event date / time',
       '#type' => 'select',
       '#options' => meetup_events_get_date_fields_for_type($type),
-      '#default_value' => $values[$type]["date_field"],
+      '#default_value' => $settings[$type]["date_field"],
     );
 
     $form["meetup_events"][$type]["venue_field"] = array(
-      '#title' => t("Venu Field"),
-      '#description' => 'Which date field should we use for the event date / time',
+      '#title' => t("Venue Id Field"),
+      '#description' => 'Which numeric field should we use for numeric venue id for meetup (can be on a referenced node)',
       '#type' => 'select',
-      '#options' => meetup_events_get_venue_fields_for_type($type),
-      '#default_value' => $values[$type]["venue_field"],
+      '#options' => meetup_events_get_numeric_fields_for_type($type),
+      '#default_value' => $settings[$type]["venue_field"],
+    );
+
+    $form["meetup_events"][$type]["venue_lat"] = array(
+      '#title' => t("Venue Latitude Field"),
+      '#description' => 'Which numeric field should we use for Latitude to force the position of the map marker (optional)',
+      '#type' => 'select',
+      '#options' => meetup_events_get_numeric_fields_for_type($type),
+      '#default_value' => $settings[$type]["venue_lat"],
+    );
+
+    $form["meetup_events"][$type]["venue_lon"] = array(
+      '#title' => t("Venue Longitude Field"),
+      '#description' => 'Which numeric field should we use for Longitude to force the position of the map marker (optional)',
+      '#type' => 'select',
+      '#options' => meetup_events_get_numeric_fields_for_type($type),
+      '#default_value' => $settings[$type]["venue_lon"],
     );
 
     $form["meetup_events"][$type]["body"] = array(
       '#title' => t("Body Contents"),
       '#description' => 'The body content which will be synced to meetup (can use tokens if enabled)',
       '#type' => 'textarea',
-      '#default_value' => ($values[$type]["body"]) ? $values[$type]["body"] : t("Come to our awesome meetup!")
+      '#default_value' => ($settings[$type]["body"]) ? $settings[$type]["body"] : t("Come to our awesome meetup!")
     );
 
     if (module_exists('token')) {
