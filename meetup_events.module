@@ -48,13 +48,13 @@ function meetup_events_fetch_date($node, $dfield) {
 function meetup_events_nodeapi(&$node, $op, $a3, $a4) {
   // dprint_r("Op: " . $op);
   // drupal_set_message(print_r($node, TRUE));
-  $options = meetup_events_options_for($node->type);
-  # drupal_set_message("<pre>" . print_r($options, TRUE) . "</pre>");
-  if ($options["date_field"]) {
-    $f = $options["date_field"];
-    $date = $node->$f;
-    drupal_set_message("<pre>" . print_r($date[0]["value"], TRUE) . "</pre>");
-  }
+  /* $options = meetup_events_options_for($node->type); */
+  /* # drupal_set_message("<pre>" . print_r($options, TRUE) . "</pre>"); */
+  /* if ($options["date_field"]) { */
+  /*   $f = $options["date_field"]; */
+  /*   $date = $node->$f; */
+  /*   drupal_set_message("<pre>" . print_r($date[0]["value"], TRUE) . "</pre>"); */
+  /* } */
   // drupal_set_message("<pre>" . print_r($node, TRUE) . "</pre>");
 
   if (($op == "insert") || ($op == "update")) {
@@ -77,7 +77,6 @@ function meetup_events_options_for($type) {
 
 function meetup_events_is_type_syncable($type) {
   $options = meetup_events_options_for($type);
-  return FALSE;
   if ($options["enabled"]) {
     return TRUE;
   } else {
