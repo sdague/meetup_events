@@ -31,6 +31,16 @@ function meetup_events_menu() {
   return $items;
 }
 
+function meetup_events_fetch_venue($node, $vfield) {
+  if (!$vfield or ($vfield == "none")) {
+    return;
+  }
+  # TODO: if it's a single name, find and return it
+
+  # TODO: if it's a referenced field, deconstruct and find it
+
+}
+
 function meetup_events_fetch_date($node, $dfield) {
   $tz = date_default_timezone_get();
   date_default_timezone_set('UTC');

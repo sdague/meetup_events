@@ -13,6 +13,41 @@
 
 // ctools_include('dependent');
 
+function meetup_events_get_venue_fields_for_type($type) {
+  $fields = array("none" => "Don't sync venue");
+  # first get all number fields that are on the type
+  $results = db_query("SELECT c.field_name, c.label from {content_node_field_instance} c INNER JOIN {node_type} n ON c.type_name=n.type where c.widget_module='number' and c.type_name='%s' ORDER BY n.name, c.label", $type);
+  while($obj = db_fetch_object($results)) {
+    $fields[$obj->field_name] = $obj->label;
+  }
+  # then get all number fields that are on the nodereferences
+  $results = db_query("SELECT c.field_name, c.label from {content_node_field_instance} c INNER JOIN {node_type} n ON c.type_name=n.type where c.widget_module='nodereference' and c.type_name='%s' ORDER BY n.name, c.label", $type);
+  while($obj = db_fetch_object($results)) {
+    $field = $obj->field_name;
+    $label = $obj->label;
+    $types = array();
+
+    # and figure out what node types they can be
+    $type_results = db_query("SELECT * from {content_node_field} where field_name='%s'", $field);
+    while($reftype = db_fetch_object($type_results)) {
+      $ref_types = unserialize($reftype->global_settings);
+
+      // drupal_set_message("<pre>" . print_r($ref_types["referenceable_types"], TRUE) . "</pre>");
+
+      foreach ($ref_types["referenceable_types"] as $key => $value) {
+        if ($value) {
+        # and then see what numbers they have
+          $ref_results = db_query("SELECT c.field_name, c.label from {content_node_field_instance} c INNER JOIN {node_type} n ON c.type_name=n.type where c.widget_module='number' and c.type_name='%s' ORDER BY n.name, c.label", $key);
+          while($ref = db_fetch_object($ref_results)) {
+            $fields[$field . ":" . $ref->field_name] = $label . " => " . $ref->label;
+          }
+        }
+      }
+    }
+  }
+  return $fields;
+}
+
 function meetup_events_get_date_fields_for_type($type) {
   $fields = array();
   $results = db_query("SELECT c.field_name, c.label from {content_node_field_instance} c INNER JOIN {node_type} n ON c.type_name=n.type where c.widget_module='date' and c.type_name='%s' ORDER BY n.name, c.label", $type);
@@ -81,6 +116,14 @@ function meetup_events_admin_settings() {
       '#type' => 'select',
       '#options' => meetup_events_get_date_fields_for_type($type),
       '#default_value' => $values[$type]["date_field"],
+    );
+
+    $form["meetup_events"][$type]["venue_field"] = array(
+      '#title' => t("Venu Field"),
+      '#description' => 'Which date field should we use for the event date / time',
+      '#type' => 'select',
+      '#options' => meetup_events_get_venue_fields_for_type($type),
+      '#default_value' => $values[$type]["venue_field"],
     );
 
     $form["meetup_events"][$type]["body"] = array(
