@@ -31,16 +31,6 @@ function meetup_events_get_allowed_types() {
   return $options;
 }
 
-
-
-function meetup_events_is_type_syncable($type) {
-  if (variable_get("meetup_events_" . $type . "_enable", FALSE)) {
-    return TRUE;
-  } else {
-    return FALSE;
-  }
-}
-
 /***
  * Form for main settings page
  */

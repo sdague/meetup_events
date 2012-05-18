@@ -38,11 +38,22 @@ function meetup_events_nodeapi(&$node, $op, $a3, $a4) {
   // dprint_r("Op: " . $op);
   // drupal_set_message(print_r($node, TRUE));
   if (($op == "insert") || ($op == "update")) {
-    if (meetup_events_is_type_synchable($node->type)) {
+    if (meetup_events_is_type_syncable($node->type)) {
       meetup_events_sync_event($node);
     }
   }
 }
+
+function meetup_events_is_type_syncable($type) {
+  $values = variable_get("meetup_events", array());
+
+  if ($values[$type . "_enable"][$type]) {
+    return TRUE;
+  } else {
+    return FALSE;
+  }
+}
+
 
 function meetup_events_sync_event(&$node) {
   $meetupid = meetup_events_get_meetupid($node->nid);
