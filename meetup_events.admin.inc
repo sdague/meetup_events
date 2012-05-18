@@ -105,22 +105,25 @@ function meetup_events_admin_settings() {
     }
   }
 
-  $form['api'] = array(
+  $form['meetup_api'] = array(
     '#type' => 'fieldset',
+    '#tree' => TRUE,
     '#title' => t('Meetup.com API information'),
   );
 
-  $form['api']['meetup_events_meetup_key'] = array(
+  $api = variable_get('meetup_api', array());
+
+  $form['meetup_api']['key'] = array(
     '#type' => 'textfield',
     '#title' => t('Meetup API Key'),
-    '#default_value' => variable_get('meetup_events_meetup_key', 0),
-    '#description' => t('The meetup API key for your user'),
+    '#default_value' => $api["key"],
+    '#description' => t('The <a href="http://www.meetup.com/meetup_api/key/">meetup API key</a> for your user.')
   );
 
-  $form['api']['meetup_events_meetup_group'] = array(
+  $form['meetup_api']['group'] = array(
     '#type' => 'textfield',
     '#title' => t('Meetup Group ID'),
-    '#default_value' => variable_get('meetup_events_meetup_group', 0),
+    '#default_value' => $api["group"],
     '#description' => t('The meetup group id'),
   );
 
