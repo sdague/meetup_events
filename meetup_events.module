@@ -7,6 +7,9 @@
  * to specified email addresses.
  */
 
+function medbg($obj) {
+  drupal_set_message("<pre>" . print_r($obj, TRUE) . "</pre>");
+}
 
 /**
  * Implementation of hook_perm()
@@ -32,13 +35,30 @@ function meetup_events_menu() {
 }
 
 function meetup_events_fetch_venue($node, $vfield) {
+
   if (!$vfield or ($vfield == "none")) {
     return;
   }
   # TODO: if it's a single name, find and return it
+  $parts = explode(":", $vfield);
+
+  if (!$parts[1]) {
+    $venue = $node->$vfield;
+    return $venue[0]["value"];
+  }
 
   # TODO: if it's a referenced field, deconstruct and find it
+  $ref = $parts[0];
+  $field = $parts[1];
 
+  $loc = $node->$ref;
+
+  $refnode = node_load(array("nid" => $loc[0]["nid"]));
+
+  //  medbg($refnode);
+  $venue = $refnode->$field;
+  // medbg($venue);
+  return $venue[0]["value"];
 }
 
 function meetup_events_fetch_date($node, $dfield) {
@@ -56,17 +76,6 @@ function meetup_events_fetch_date($node, $dfield) {
  * Implementation of hook_nodeapi()
  */
 function meetup_events_nodeapi(&$node, $op, $a3, $a4) {
-  // dprint_r("Op: " . $op);
-  // drupal_set_message(print_r($node, TRUE));
-  /* $options = meetup_events_options_for($node->type); */
-  /* # drupal_set_message("<pre>" . print_r($options, TRUE) . "</pre>"); */
-  /* if ($options["date_field"]) { */
-  /*   $f = $options["date_field"]; */
-  /*   $date = $node->$f; */
-  /*   drupal_set_message("<pre>" . print_r($date[0]["value"], TRUE) . "</pre>"); */
-  /* } */
-  // drupal_set_message("<pre>" . print_r($node, TRUE) . "</pre>");
-
   if (($op == "insert") || ($op == "update")) {
     if (meetup_events_is_type_syncable($node->type)) {
       meetup_events_sync_event($node);
@@ -81,9 +90,8 @@ function meetup_events_options_for($type) {
   $options = array();
   $options["enabled"] = ($values[$type . "_enabled"][$type]) ? TRUE : FALSE;
   $options["date_field"] = $values[$type]["date_field"];
+  $options["venue_field"] = $values[$type]["venue_field"];
   $options["body"] = $values[$type]["body"];
-  #drupal_set_message(print_r($values, TRUE));
-  #drupal_set_message(print_r($options, TRUE));
   return $options;
 }
 
@@ -148,16 +156,24 @@ function meetup_events_node_data($node) {
     "time" => $date->getTimestamp() * 1000,
   );
 
-  $venue = theme('meetup_events_venueid', $node);
+  medbg($options);
+  $venue = meetup_events_fetch_venue($node, $options["venue_field"]);
+  # TODO: bring back lat / lon support
+
   if ($venue) {
-    # $venue comes back as a venue_id plus an optional lat, lon
-    $loc = explode(",", $venue);
-    $data["venue_id"] = $loc[0];
-    if ($loc[1] && $loc[2]) {
-      $data["lat"] = $loc[1];
-      $data["lon"] = $loc[2];
-    }
+    $data["venue_id"] = $venue;
   }
+
+  /* $venue = theme('meetup_events_venueid', $node); */
+  /* if ($venue) { */
+  /*   # $venue comes back as a venue_id plus an optional lat, lon */
+  /*   $loc = explode(",", $venue); */
+  /*   $data["venue_id"] = $loc[0]; */
+  /*   if ($loc[1] && $loc[2]) { */
+  /*     $data["lat"] = $loc[1]; */
+  /*     $data["lon"] = $loc[2]; */
+  /*   } */
+  /* } */
 
   $request_data = http_build_query($data, '', '&');
 
@@ -208,6 +224,9 @@ function meetup_events_create_event($node) {
   $request_method = 'POST';
 
   $data = meetup_events_node_data($node);
+
+  # TODO: validate data as sane before sending out
+  # TODO: refactor to a seperate upstream call
 
   $res = drupal_http_request($request_url, $request_headers, $request_method, $data);
 #  drupal_set_message("Create '" . $res->data . "'");
