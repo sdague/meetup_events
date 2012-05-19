@@ -90,14 +90,15 @@ function meetup_events_admin_settings() {
 
     $dates = meetup_events_get_date_fields_for_type($type);
 
+    $dashtype = str_replace("_", "-", $type);
     $form["meetup_events"][$type] = array(
       '#type' => 'fieldset',
       '#input' => TRUE,
-      '#id' => 'group-' . $type,
-      '#prefix' => '<div id="group-' . $type. '-wrapper">', # <div id="group-' . $type . '">',
+      '#id' => 'group-' . $dashtype,
+      '#prefix' => '<div id="group-' . $dashtype. '-wrapper">', # <div id="group-' . $type . '">',
       '#suffix' => '</div>', # </div>',
       '#process' => array('ctools_dependent_process','expand_checkboxes'),
-      '#dependency' => array("edit-meetup-events-" . $type . "-enabled-$type" => array(TRUE))
+      '#dependency' => array("edit-meetup-events-" . $dashtype . "-enabled-" . $dashtype => array(TRUE))
     );
 
     $form["meetup_events"][$type]["date_field"] = array(
