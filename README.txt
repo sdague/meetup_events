@@ -17,26 +17,11 @@ From the admin panel you can also specify which date field to use for
 the type, as well as what the body text should be (you can use
 tokens). If you have 'notification_content' installed you'll have a
 [node-body] token available, which you'll really want, default Token
-doesn't provide that.
+doesn't provide that. There is a nodereference_tokens module provided
+to use the body or teaser of referenced nodes as well.
 
 You must also specify your API key from meetup.com, as well as the
 numeric group id (which you can discover via the API console).
-
-HOW TO SPECIFY VENUES
-
-Specifying Venues is still a bit of black magic because there is no
-really standard way to do this. In my sites I use a node_reference to
-a Location type so that I don't need to repeat venues often (we have a
-few dozen events a year, but only 3 venues that get used).
-
-If you want the module to sync venues you need to build a theme
-function that will handle it.
-
-* theme_meetup_events_venueid($node)
-
-Given a fully populated $node, return the venueid as an
-integer. Optionally return venue_id:lat:lon as a string if you want to
-force a specific lat lon.
 
 VENUES
 
@@ -53,4 +38,7 @@ If you're using a location type which is a node reference from your
 events, this works out very well, as you need to build this location
 -> venue link only once, future events at that venue will
 automatically get synced.
+
+Additional lat and lon fields can be provided if the venue id doesn't
+geocode sanely.
 

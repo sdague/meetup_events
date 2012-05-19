@@ -69,10 +69,32 @@ function meetup_events_fetch_date($node, $dfield) {
   date_default_timezone_set('UTC');
 
   $date = $node->$dfield;
-  return new DateTime($date[0]["value"]);
+  $dtstart = new DateTime($date[0]["value"]);
 
   // Make sure to reset the timezone, we really don't want this actually global
   date_default_timezone_set($tz);
+  return $dtstart;
+}
+
+/**
+ * Fetch the duration of an event
+ */
+function meetup_events_fetch_duration($node, $dfield) {
+  $tz = date_default_timezone_get();
+  date_default_timezone_set('UTC');
+
+  $duration = 0;
+
+  $date = $node->$dfield;
+  $dtstart = new DateTime($date[0]["value"]);
+  $dtend = new DateTime($date[0]["value2"]);
+  if ($dtend) {
+    $duration = $dtend->getTimestamp() - $dtstart->getTimestamp();
+  }
+
+  // Make sure to reset the timezone, we really don't want this actually global
+  date_default_timezone_set($tz);
+  return $duration;
 }
 
 /**
@@ -160,6 +182,11 @@ function meetup_events_node_data($node) {
     "description" => token_replace($options["body"], 'node', $node),
     "time" => $date->getTimestamp() * 1000,
   );
+
+  $duration = meetup_events_fetch_duration($node, $options["date_field"]);
+  if ($duration) {
+    $data["duration"] = $duration * 1000;
+  }
 
   $venue = meetup_events_fetch_numeric($node, $options["venue_field"]);
   if ($venue) {
