@@ -1,0 +1,41 @@
+<?php
+/***
+ ** TODO: spin out a reference implementation of a deep token system for nodereference
+ */
+
+function nodereference_tokens_get_nr_fields() {
+  $fields = array();
+  $results = db_query("SELECT c.field_name from {content_node_field} c WHERE c.type='nodereference' ORDER by c.field_name");
+  while($obj = db_fetch_object($results)) {
+    $fields[] = $obj->field_name;
+  }
+  return $fields;
+}
+
+function nodereference_tokens_token_list($type = 'all') {
+  $tokens = array();
+
+  $fields = nodereference_tokens_get_nr_fields();
+  foreach ($fields as $field) {
+    $tokens['CCK node reference'][$field . '-body'] = t('Referenced node body');
+    $tokens['CCK node reference'][$field . '-teaser'] = t('Referenced node teaser');
+  }
+  return $tokens;
+}
+
+function nodereference_tokens_token_values($type, $object = NULL, $options = array()) {
+  if ($type == "node") {
+    $tokes = array();
+    # drupal_set_message("Fill in token values - $type");
+    # drupal_set_message("<pre>" . print_r($options, TRUE) . "</pre>");
+    # $item = $object[0];
+    $fields = nodereference_tokens_get_nr_fields();
+    foreach ($fields as $field) {
+      $ref = $object->$field;
+      $refnode = node_load($ref[0][nid]);
+      $tokens[$field . '-body'] = $refnode->body;
+      $tokens[$field . '-teaser'] = $refnode->teaser;
+    }
+    return $tokens;
+  }
+}
