@@ -11,6 +11,9 @@ function medbg($obj) {
   drupal_set_message("<pre>" . print_r($obj, TRUE) . "</pre>");
 }
 
+function meetup_events_init() {
+   include_once('./' . drupal_get_path('module', 'meetup_events') . "/meetup_events.views.inc");
+}
 /**
  * Implementation of hook_perm()
  */
