@@ -177,12 +177,23 @@ function meetup_events_admin_settings() {
     '#description' => t('The meetup group id'),
   );
 
+  # TODO: add oauth key for RSVP poppup
+  # TODO: add option to only allow RSVPs on main site
+
   /* $form['buttons']['save'] = array( */
   /*   '#type' => 'submit', */
   /*   '#value' => t('Save') */
   /* ); */
 
   return system_settings_form($form);
+}
+
+function meetup_events_admin_settings_validate($form, &$form_state) {
+  // medbg($form_state);
+  #TODO: validate the key works
+  #TODO: send group in, get group id, and save that as well
+
+  form_set_error('meetup_api][group', t("Must specify group url"));
 }
 
 /* function meetup_events_admin_settings_submit($form_id, &$form_state) { */

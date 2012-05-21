@@ -104,13 +104,24 @@ function meetup_events_fetch_duration($node, $dfield) {
  * Implementation of hook_nodeapi()
  */
 function meetup_events_nodeapi(&$node, $op, $a3, $a4) {
+  if (($op == "view")) {
+    $meetup_id = meetup_events_get_meetupid($node->nid);
+    if ($meetup_id) {
+      drupal_add_js(drupal_get_path('module', 'meetup_events') . '/js/rsvp.js');
+      # TODO: make this so the meetup URL is coming from settings
+      $node->content['meetup_rsvp'] = array(
+        '#value' => '<a href="http://www.meetup.com/Mid-Hudson-Astronomical-Association/events/' . $meetup_id . '/" data-event="' . $meetup_id . '" class="mu-rsvp-btn">RSVP</a>',
+        '#weight' => -10,
+      );
+    }
+  }
+
   if (($op == "insert") || ($op == "update")) {
     if (meetup_events_is_type_syncable($node->type)) {
       meetup_events_sync_event($node);
     }
   }
   # TODO: enable delete
-  # TODO: display "RSVP for event" on view of events
 }
 
 function meetup_events_options_for($type) {
