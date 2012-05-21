@@ -1,4 +1,5 @@
 window.mu = window.mu || {};
+var $jq;
 
 (function() {
    if(!Array.prototype.filter) {
@@ -41,7 +42,7 @@ window.mu = window.mu || {};
    }
    /* FIXME */
    , GlobalVars = {}
-     
+
    /** Provides persistance. defaults to localStorage, falling back on memory */
    , Store = (function(){
      var ls = 'localStorage' in window && window['localStorage'] !== null ? localStorage : null, m = {};
@@ -122,7 +123,7 @@ window.mu = window.mu || {};
           : "unsupported language " + l;
        };
    })()
-     
+
    /** Provides simple UI templating. Templates are referenced as functions that may or may not
     *  accecpt arguments T.foo(), T.bar(baz, boom) */
    , T = {
@@ -197,7 +198,7 @@ window.mu = window.mu || {};
               , ' padding:.5em 1em; -moz-box-shadow:1px 1px 3px 0 rgba(0, 0, 0, 0.5) inset;'
               , ' -webkit-box-shadow:1px 1px 3px 0 rgba(0, 0, 0, 0.5) inset; box-shadow:1px 1px 3px 0 rgba(0, 0, 0, 0.5) insert;'
               , ' -webkit-border-radius:3px;-moz-border-radius:3px; border-radius:3px;}'
-              , '.mu-widget .mu-yn .rsvp-q { font-weight:bold;}'   
+              , '.mu-widget .mu-yn .rsvp-q { font-weight:bold;}'
               , '.mu-widget strong { font-weight:bold; } '
 
               // default btns are red
@@ -218,7 +219,7 @@ window.mu = window.mu || {};
               , '  background: -moz-linear-gradient(top,  #FB0A52,  #B7000E);'
               , '}'
 
-              // passive btns are grey 
+              // passive btns are grey
               , '.mu-widget a.btn.passive:link, .mu-widget a.btn.passive:visited {'
               , '  color:#fff; font-weight:bold; -moz-box-shadow: 0 0 5px #ccc;'
               , '  -webkit-box-shadow: 0 0 5px #ccc; box-shadow: 0 0 5px #ccc;'
@@ -226,8 +227,8 @@ window.mu = window.mu || {};
               , "  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#999999', endColorstr='#737070');"
               , '  background: -webkit-gradient(linear, left top, left bottom, from(#999999), to(#737070));'
               , '  background: -moz-linear-gradient(top, #999999, #737070); padding:.4em .5em;}'
-                 
-              , '.mu-widget a.mu-rsvp-btn:link, .mu-widget a.mu-rsvp-btn:visited, .mu-widget a.mu-rsvp-btn:hover {margin:0;padding:0; background:none; border:0;}'                 
+
+              , '.mu-widget a.mu-rsvp-btn:link, .mu-widget a.mu-rsvp-btn:visited, .mu-widget a.mu-rsvp-btn:hover {margin:0;padding:0; background:none; border:0;}'
 
               , '.mu-widget .tail {'
               , '  position:absolute; width:0;height:0;border-left:10px solid transparent;'
@@ -405,7 +406,7 @@ window.mu = window.mu || {};
                  , '</div><div><input type="text" name="inv_code" class="req ans inv-code" tabindex="'
                  , idx++
                  ,'"/></div>'].join('') : '';
-  
+
    			   return ['<form class="profile-frm"><div class="profile-frm-errs"/>',
                  , extra ,'<div class="q">'
                  , (ir?'<span class="rstar">*</span> ':'')
@@ -415,7 +416,7 @@ window.mu = window.mu || {};
                  , '" tabindex="'
                  , idx++
                  ,'"/></div>'
-                 , qs ? $.map(qs, ques).join('') : ''
+                 , qs ? $jq.map(qs, ques).join('') : ''
                  , '</form>'
                  , T.btn(C('create-profile-btn'), 'create-profile')
                  , ' ',
@@ -482,7 +483,7 @@ window.mu = window.mu || {};
              return T.eventDetails(e, closedCode, payreq ? T.payreq(e) : T.joinGroup(e.group.join_mode));
            }
          } else {
-           switch(closedCode) {               
+           switch(closedCode) {
            case 0:/*not closed*/
                return T.eventDetails(e, closedCode, e.self.rsvp.response === 'yes' ?
                                      T.imIn() : (e.self.rsvp.response === 'waitlist' ?
@@ -580,7 +581,7 @@ window.mu = window.mu || {};
 
      // @return token if valid, null otherwise
      , authenticated = function() {
-         var at = $.parseJSON(Store.get('access'));
+         var at = $jq.parseJSON(Store.get('access'));
          return at && new Date(at.expires) > +new Date() ? at.token : (
              at && !at.expires && at.token ? at.token : null);
      }
@@ -723,7 +724,7 @@ window.mu = window.mu || {};
      // attach fns to window
      window.onMuAuthPass = onToken;
      window.onMuAuthFail = onError;
-                           
+
      // logging out of meetup will expire token
      var logout = function(token, callback) {
        var uri = Domains.logout + '?access_token=' + token
@@ -749,15 +750,16 @@ window.mu = window.mu || {};
 
      // all jquery dependent code should go within this function
      var jqready = function() {
-        $("head").append(T.style(T.css()));
+        $jq = jQuery.noConflict();
+        $jq("head").append(T.style(T.css()));
 
-        user = Store.get('user') ? $.parseJSON(Store.get('user')) : null;
-         
+        user = Store.get('user') ? $jq.parseJSON(Store.get('user')) : null;
+
         // redifineing this year to a btn query for event id
         // and a redirect, note the selector for the rsvp btn
         // may be in the format of rsvp-id-counter a
         T.notfound = function(eid) {
-          var nfurl = $('span[id^="rsvp-'+eid+'"] a').attr("href");
+          var nfurl = $jq('span[id^="rsvp-'+eid+'"] a').attr("href");
           if(nfurl) { window.location.href= nfurl; }
           else { throw Error("could not find an rsvp btn for event " + eid); }
         };
@@ -770,9 +772,9 @@ window.mu = window.mu || {};
               cli.event(event_id, function(ev) {
                 if(ev) {
                   cli.profile(ev.group.id, function(profile) {
-                    var markup = $(T.event(profile, ev, event_id)), behave = function(mku) {
+                    var markup = $jq(T.event(profile, ev, event_id)), behave = function(mku) {
                       mku.find("div.logout-container a.mu-logout").bind('click', function() {
-                        $(mku.find('div.interact')).html(
+                        $jq(mku.find('div.interact')).html(
                          '<div class="actns-centered">'+C('logging-out')+'</div>'                                                                        );
                         requireAuth(function(token) {
                           logout(token, function() {
@@ -789,7 +791,7 @@ window.mu = window.mu || {};
                         cli.group(ev.group.id, function(res) {
                           if(res) {
                             interact.fadeOut(200, function() {
-                              var self = $(this);
+                              var self = $jq(this);
                               if(res && res.join_info && parseInt(res.join_info.photo_req, 10)) {
                                 requireUser(function(newMe){
                                   me = newMe;
@@ -811,7 +813,7 @@ window.mu = window.mu || {};
                       .delegate('.cancel-profile', 'click', function(e) {
                         e.preventDefault();
                         interact.fadeOut(200, function() {
-                          $(this).html(T.joinGroup(ev.group.join_mode)).fadeIn(200);
+                          $jq(this).html(T.joinGroup(ev.group.join_mode)).fadeIn(200);
                         });
                       })
                       .delegate('.cancel-profile-closed', 'click', function(e) {
@@ -837,9 +839,9 @@ window.mu = window.mu || {};
                             jargs[name] = input.val();
                           }
                         };
-                        collect('intro', $(mku.find('.intro')));
+                        collect('intro', $jq(mku.find('.intro')));
                         mku.find('.ans').each(function(e, a) {
-                          collect(a.name, $(a));
+                          collect(a.name, $jq(a));
                         });
 
                         if(!errs) {
@@ -848,24 +850,24 @@ window.mu = window.mu || {};
                               if(res.code) {
                                 var c = res.code;
                                 if(c === 'invalid_answer') {
-                                  $(mku).find('.profile-frm-errs').text(C('profile-invalid-answer'));
+                                  $jq(mku).find('.profile-frm-errs').text(C('profile-invalid-answer'));
                                 } else if(c === 'invalid_url') {
-                                  $(mku).find('.profile-frm-errs').text(C('profile-invalid-url'));
+                                  $jq(mku).find('.profile-frm-errs').text(C('profile-invalid-url'));
                                 } else if(c === 'invalid_inv_code') {
-                                  $(mku).find('.profile-frm-errs').text(C('profile-invalid-inv-code'));
-                                  $(mku).find('.inv-code').parent().addClass('err');
+                                  $jq(mku).find('.profile-frm-errs').text(C('profile-invalid-inv-code'));
+                                  $jq(mku).find('.inv-code').parent().addClass('err');
                                 } else if(c === 'join_viaweb') {
-                                  $(mku).find('.profile-frm-errs').text(
+                                  $jq(mku).find('.profile-frm-errs').text(
                                     C('requires-photo', T.grpa(ev.group, 'Meetup'))
                                   );
                                 } else {
-                                  $(mku).find('.profile-frm-errs').text(C('profile-invalid-general'));
+                                  $jq(mku).find('.profile-frm-errs').text(C('profile-invalid-general'));
                                 }
                               }
                             } else {
                               interact.fadeOut(200, function(){
                                  var wl = ev.rsvp_limit && ev.rsvp_limit <= ev.yes_rsvp_count;
-                                 $(this).html(res.status === 'pending' ?
+                                 $jq(this).html(res.status === 'pending' ?
                                               T.pendingProfile(ev.group, res) :
                                               (wl ? (ev.rsvp_rules && ev.rsvp_rules.waiting === 'off' ?
                                                      T.noWaiting() : T.iWantToWait()) : T.haventDecided())).fadeIn(200);
@@ -873,7 +875,7 @@ window.mu = window.mu || {};
                             }
                           });
                         } else {
-						  $(mku.find('div.profile-frm-errs')).text(C('create-profile-validation-fail'));
+						  $jq(mku.find('div.profile-frm-errs')).text(C('create-profile-validation-fail'));
 						}
                       })
                       .delegate(".mu-im-out", 'click', function(e) {
@@ -883,30 +885,31 @@ window.mu = window.mu || {};
                           mku.find('.mu-r-cnt').html(T.attending(res.yes) + (wl ? ' ' +  C('rsvps-full'):''));
                           var mems = mku.find("div.going .mimg");
                           for(var i=0,l=mems.length;i<l;i++) {
-                            var m = $(mems[i]);
+                            var m = $jq(mems[i]);
                             if(parseInt(m.data()['member'], 10) === parseInt(me.id, 10)) {
                               m.parent().fadeOut('fast', function() {
-                                $(this).remove();
+                                $jq(this).remove();
                               });
                               break;
                             }
                           }
                           interact.fadeOut(200, function() {
-                                               $(this).html(wl ? (ev.rsvp_rules && ev.rsvp_rules.waitlisting === 'off' ?
+                                               $jq(this).html(wl ? (ev.rsvp_rules && ev.rsvp_rules.waitlisting === 'off' ?
                                                                   T.noWaiting() : T.iWantToWait()) : T.imOut()).fadeIn(200);
                           });
                         });
                       })
                       .delegate(".mu-im-in", 'click', function(e) {
 						e.preventDefault();
-                        var waiting = $(this).hasClass('waitlist');
+                        var waiting = $jq(this).hasClass('waitlist');
                         var response = waiting ? 'waitlist': 'yes';
+
                         cli.rsvp(ev.id, response, function(res) {
                           mku.find('.mu-r-cnt').html(T.attending(res.yes) + (waiting ? ' ' +  C('rsvps-full'):''));
                           var mems = mku.find("div.going .mimg");
                           if(!waiting && mems.size() < 5) {
                               cli.profile(ev.group.id, function(p) {
-                                $("div.going .yes-pics").append(['<a href="'
+                                $jq("div.going .yes-pics").append(['<a href="'
                                                                , me.profile_url
                                                                ,'" target="_blank"><span data-member="'
                                                                , me.id,'" class="mimg"><img width="40" height="40" src="'
@@ -917,9 +920,9 @@ window.mu = window.mu || {};
                                                                , '"></span></a>'].join(''));
                             });
                           }
-                          
+
                           interact.fadeOut(200, function(){
-                                               $(this).html(waiting ? (ev.rsvp_rules && ev.rsvp_rules.waitlisting === 'off' ?
+                                               $jq(this).html(waiting ? (ev.rsvp_rules && ev.rsvp_rules.waitlisting === 'off' ?
                                                                        T.noWaiting(): T.imWaiting()) : T.imIn()).fadeIn(200);
                           });
                         });
@@ -932,7 +935,7 @@ window.mu = window.mu || {};
                       GlobalVars.bubble.hide();
                       GlobalVars.bubble = undefined;
                     }
-                    GlobalVars.bubble = $("#rsvp-" + event_id + "-" + cnt + " .prompt").empty().html(
+                    GlobalVars.bubble = $jq("#rsvp-" + event_id + "-" + cnt + " .prompt").empty().html(
                       behave(markup)).show(function(){
                         cli.rsvps(event_id, function(res) {
                           var f = res.filter(function(r){ return r.response === 'yes'; })
@@ -957,7 +960,7 @@ window.mu = window.mu || {};
                     GlobalVars.bubble.hide();
                     GlobalVars.bubble = undefined;
                   }
-                  GlobalVars.bubble = $("#rsvp-" + event_id + " .prompt").empty().html(T.event(null, null, null)).show();
+                  GlobalVars.bubble = $jq("#rsvp-" + event_id + " .prompt").empty().html(T.event(null, null, null)).show();
                 }
               });
             } else {
@@ -967,16 +970,16 @@ window.mu = window.mu || {};
         }
         // ensures that a server is accessible to dispatch calls to
         , requireServer = function(cb) {
-          var iframe = $("#meetup-api");
+          var iframe = $jq("#meetup-api");
           if(iframe[0]) {
             server = iframe[0].contentWindow;
             cb();
           } else {
-             iframe = $(['<iframe style="width:0px;height:0px;border:0px" scrolling="no" frameborder="no" allowtransparency="true" id="meetup-api" src="'
+             iframe = $jq(['<iframe style="width:0px;height:0px;border:0px" scrolling="no" frameborder="no" allowtransparency="true" id="meetup-api" src="'
                        , proxyUrl
                          , '"></iframe>'].join(''));
             // todo: attach an iframe.onerror handler to handle server errors
-            $("body").append(iframe);
+            $jq("body").append(iframe);
               iframe.load(function() {
               server = iframe[0].contentWindow;
               cb();
@@ -985,7 +988,7 @@ window.mu = window.mu || {};
         };
 
        // rewrite rsvp btn html and laf
-       $.fn.decorateRsvpBtn = function() {
+       $jq.fn.decorateRsvpBtn = function() {
          this.empty().html('<img src="http://static1.meetupstatic.com/img/3503654184008070142/api/rsvp_btn.png"/>').addClass('mu-a btn');
          return this;
        };
@@ -1044,7 +1047,7 @@ window.mu = window.mu || {};
        }
        // handling incoming msg from remote server
        , receive = function(e) {
-         var r = $.parseJSON(e.data);
+         var r = $jq.parseJSON(e.data);
          if(r) {
            switch(r.status) {
            case 401:
@@ -1059,7 +1062,7 @@ window.mu = window.mu || {};
            case 201:
            case 400: // client should handle error case
              throttle(r);
-             respondWith(r.uuid, $.parseJSON(r.response));
+             respondWith(r.uuid, $jq.parseJSON(r.response));
            }
          } else {
            throw new Error("rec malformed response");
@@ -1109,8 +1112,8 @@ window.mu = window.mu || {};
           *  @param sel selector of element containing rsvp btns */
          rsvpBtns: function(sel) {
            var valid = [];
-           $((sel || '') + " a.mu-rsvp-btn").each(function(i,e) {
-             var btn = $(this)
+           $jq((sel || '') + " a.mu-rsvp-btn").each(function(i,e) {
+             var btn = $jq(this)
               , elink = this.href.split("#").shift().split("?").shift()
               , id = /^.+[.]meetup.com\/.+\/events\/(\w+)\/?$/.exec(elink);
               if(id) {
@@ -1121,17 +1124,17 @@ window.mu = window.mu || {};
               } else {
                 if(btn.data() && btn.data().event) {
                   btnCount++;
-                  btn.data().cnt = btnCount;      
+                  btn.data().cnt = btnCount;
                   valid.push(btn);
                 }
               }
            });
-           $(valid).each(function(i,e) {
+           $jq(valid).each(function(i,e) {
              e.decorateRsvpBtn()
               .wrap('<span class="mu-widget" id="rsvp-' + e.data().event + '-'+ e.data().cnt+'"/>')
               .after('<div class="prompt"/>').bind('click', function(e) {
                 e.preventDefault();
-                var btn = $(this), auth = authenticated();
+                var btn = $jq(this), auth = authenticated();
                 if(auth && btn.hasClass('active')) {
                   btn.parent().find("div.prompt").hide();
                   btn.removeClass('active');
@@ -1156,9 +1159,9 @@ window.mu = window.mu || {};
       }
 
       /* FIXME */
-      $(document.body).click(
+      $jq(document.body).click(
         function (ev) {
-          if (GlobalVars.bubble && GlobalVars.bubble.length > 0 && !$.contains(GlobalVars.bubble[0], ev.target)) {
+          if (GlobalVars.bubble && GlobalVars.bubble.length > 0 && !$jq.contains(GlobalVars.bubble[0], ev.target)) {
             GlobalVars.bubble.hide();
             GlobalVars.bubble = undefined;
           }
@@ -1188,13 +1191,14 @@ window.mu = window.mu || {};
     });
     use(Assets.json2, typeof JSON === 'undefined',
       function(){
-        use(Assets.jquery, typeof jQuery === 'undefined', jqready);
+          use(Assets.jquery, true, jqready);
       }
     );
   }); // end mu.api
 
   // auto execute rsvp btns method if client id is provided
   // as a script query string param
+
   if(muargs && 'id' in muargs && !mu.inited) {
     mu.api({client:muargs.id}, function(M) { M.rsvpBtns(); });
   }
