@@ -134,8 +134,9 @@ function meetup_events_views_post_render(&$view, &$output, &$cache) {
 
       drupal_add_js(
         array('meetup_events' =>
-          array('force_to_meetup' => ($api["opts"]["force_to_meetup"]) ? TRUE : FALSE),
-          array('oauth_key' => $api["oauth_key"])),
+          array(
+            'force_to_meetup' => ($api["opts"]["force_to_meetup"]) ? TRUE : FALSE,
+            'oauth_key' => $api["oauth_key"])),
         'setting'
       );
 
