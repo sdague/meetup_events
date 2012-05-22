@@ -102,11 +102,14 @@ function meetup_events_fetch_duration($node, $dfield) {
 
 function meetup_events_display_rsvp(&$node) {
   $api = variable_get('meetup_api', array());
+
+  # if we don't have an oauth key, none of this is going to work
   $oauth_id = $api["oauth_key"];
   if (!$oauth_id) {
     return;
   }
 
+  # only bother doing anything on nodes that are actually in meetup
   $meetup_id = meetup_events_get_meetupid($node->nid);
   if (!$meetup_id) {
     return;

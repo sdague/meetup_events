@@ -62,3 +62,50 @@ function _meetup_events_define_view_reference(&$data, $table, $column, $title, $
     ),
   );
 }
+
+/**
+ * Implementation of hook_views_post_render().
+ *
+ * The trick of this is that if the user manages to construct the right meetup
+ * URL in a view, the javascript still isn't loaded. So we look for nodes in views
+ * that have meetup ids, and in those cases load the javascript.
+ *
+ * TODO: this is a bit more agressive than it should be, might be able to
+ * narrow down when the RSVP js should be shown.
+ */
+function meetup_events_views_post_render(&$view, &$output, &$cache) {
+  $api = variable_get('meetup_api', array());
+
+  # if we don't have an oauth key, none of this is going to work
+  $oauth_id = $api["oauth_key"];
+  if (!$oauth_id) {
+    return;
+  }
+
+  foreach ($view->result as $result) {
+    $meetup_id = meetup_events_get_meetupid($result->nid);
+    if ($meetup_id) {
+      // this is a bit tricky, because doing add_js to add a setting twice
+      // does a merge, we use this relatively undocumented trick to fetch
+      // the existing js, and make sure we haven't added a setting yet.
+
+      // TODO: we only use meetup_events setting for oauth_key, but if that
+      // changes, so would this.
+      $currentjs = drupal_add_js(NULL, NULL, 'header');
+
+      foreach ($currentjs['setting'] as $setting) {
+        if ($setting['meetup_events']) {
+          return;
+        }
+      }
+
+      drupal_add_js(
+        array('meetup_events' =>
+          array('oauth_key' => $api["oauth_key"])),
+        'setting'
+      );
+
+      drupal_add_js(drupal_get_path('module', 'meetup_events') . '/js/rsvp.js');
+    }
+  }
+}
