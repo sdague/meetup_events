@@ -170,11 +170,11 @@ function meetup_events_admin_settings() {
     '#description' => t('The <a href="http://www.meetup.com/meetup_api/key/">meetup API key</a> for your user.')
   );
 
-  $form['meetup_api']['group'] = array(
+  $form['meetup_api']['group_url'] = array(
     '#type' => 'textfield',
-    '#title' => t('Meetup Group ID'),
-    '#default_value' => $api["group"],
-    '#description' => t('The meetup group id'),
+    '#title' => t('Meetup Group URL'),
+    '#default_value' => $api["group_url"],
+    '#description' => t('The meetup group url. This will be the name of your group after http://meetup.com/<u><b>Group-URL</b></u>'),
   );
 
   $form['meetup_api']['oauth_key'] = array(
@@ -186,22 +186,40 @@ function meetup_events_admin_settings() {
 
   # TODO: add option to only allow RSVPs on main site
 
-  /* $form['buttons']['save'] = array( */
-  /*   '#type' => 'submit', */
-  /*   '#value' => t('Save') */
-  /* ); */
-
   return system_settings_form($form);
 }
 
 function meetup_events_admin_settings_validate($form, &$form_state) {
-  // medbg($form_state);
-  #TODO: validate the key works
-  #TODO: send group in, get group id, and save that as well
+  $values = $form_state["values"];
 
-  # form_set_error('meetup_api][group', t("Must specify group url"));
+  $request_url = "https://api.meetup.com/2/groups?";
+  $request_headers = array(
+    'Content-Type' => 'application/x-www-form-urlencoded',
+    'Accept-Charset' => 'utf-8');
+  $request_method = 'GET';
+
+  $rawdata = array(
+    "key" => $values['meetup_api']['key'],
+    "group_urlname" => $values['meetup_api']['group_url'],
+    "page" => 20,
+  );
+  $request_url .= http_build_query($rawdata, '', '&');
+
+  # TODO: validate the key seperately than group_url?
+
+  $res = drupal_http_request($request_url, $request_headers, $request_method, '');
+  $resp = json_decode($res->data);
+
+  foreach ($resp->results as $result) {
+    if ($result->urlname == $values['meetup_api']['group_url']) {
+      $form_state["values"]["meetup_api"]["group"] = $result->id;
+      break;
+    }
+  }
+
+  # TODO: other validations we should make?
+  # if we didn't find an id, assume things are wrong
+  if (!$form_state["values"]["meetup_api"]["group"]) {
+    form_set_error('meetup_api][group_url', t("Must specify valid group url"));
+  }
 }
-
-/* function meetup_events_admin_settings_submit($form_id, &$form_state) { */
-/*   drupal_set_message("<pre>" . print_r($form_state, TRUE) . "</pre>"); */
-/* } */
