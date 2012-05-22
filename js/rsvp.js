@@ -902,76 +902,88 @@ var $jq;
                         });
                       })
                       .delegate(".mu-im-in", 'click', function(e) {
-						e.preventDefault();
-                        var waiting = $jq(this).hasClass('waitlist');
-                        var response = waiting ? 'waitlist': 'yes';
+                          /**
+                           * In the event that we've told the system to force to
+                           * meetup.com, do a window location change here.
+                           */
+                          if (Drupal.settings.meetup_events.force_to_meetup) {
+                              var meetupurl = "http://www.meetup.com/" +
+                                  ev.group.urlname +
+                                  "/events/" + ev.id;
+                              window.location = meetupurl;
+                          } else {
+			      e.preventDefault();
+                              var waiting = $jq(this).hasClass('waitlist');
+                              var response = waiting ? 'waitlist': 'yes';
 
-                        cli.rsvp(ev.id, response, function(res) {
-                          mku.find('.mu-r-cnt').html(T.attending(res.yes) + (waiting ? ' ' +  C('rsvps-full'):''));
-                          var mems = mku.find("div.going .mimg");
-                          if(!waiting && mems.size() < 5) {
-                              cli.profile(ev.group.id, function(p) {
-                                $jq("div.going .yes-pics").append(['<a href="'
-                                                               , me.profile_url
-                                                               ,'" target="_blank"><span data-member="'
-                                                               , me.id,'" class="mimg"><img width="40" height="40" src="'
-                                                               , T.thumb(p.photo_url ?
-                                                                           p.photo_url.replace('/member_', '/thumb_'):null)
-                                                               , '" title="'
-                                                               , me.name
-                                                               , '"></span></a>'].join(''));
-                            });
+                              cli.rsvp(ev.id, response, function(res) {
+                                  mku.find('.mu-r-cnt').html(T.attending(res.yes) + (waiting ? ' ' +  C('rsvps-full'):''));
+                                  var mems = mku.find("div.going .mimg");
+                                  if(!waiting && mems.size() < 5) {
+                                      cli.profile(ev.group.id, function(p) {
+                                          $jq("div.going .yes-pics").append(['<a href="'
+                                                                             , me.profile_url
+                                                                             ,'" target="_blank"><span data-member="'
+                                                                             , me.id,'" class="mimg"><img width="40" height="40" src="'
+                                                                             , T.thumb(p.photo_url ?
+                                                                                       p.photo_url.replace('/member_', '/thumb_'):null)
+                                                                             , '" title="'
+                                                                             , me.name
+                                                                             , '"></span></a>'].join(''));
+                                      });
+                                  }
+
+                                  interact.fadeOut(200, function(){
+                                      $jq(this).html(waiting ? (ev.rsvp_rules && ev.rsvp_rules.waitlisting === 'off' ?
+                                                                T.noWaiting(): T.imWaiting()) : T.imIn()).fadeIn(200);
+                                  });
+                              });
                           }
-
-                          interact.fadeOut(200, function(){
-                                               $jq(this).html(waiting ? (ev.rsvp_rules && ev.rsvp_rules.waitlisting === 'off' ?
-                                                                       T.noWaiting(): T.imWaiting()) : T.imIn()).fadeIn(200);
-                          });
-                        });
                       });
 
-                      return mku;
+                        return mku;
                     };
 
-                    if (GlobalVars.bubble && GlobalVars.bubble.length > 0) {
-                      GlobalVars.bubble.hide();
-                      GlobalVars.bubble = undefined;
-                    }
-                    GlobalVars.bubble = $jq("#rsvp-" + event_id + "-" + cnt + " .prompt").empty().html(
-                      behave(markup)).show(function(){
-                        cli.rsvps(event_id, function(res) {
-                          var f = res.filter(function(r){ return r.response === 'yes'; })
-                          , l = Math.min(f.length, 5), pics = [], pic = function(i) {
-                            var m = f[i-1];
-                            return T.mua(['/' + ev.group.urlname, 'members', m.member.member_id].join('/')
-                                         , ['<span class="mimg" data-member="',m.member.member_id,'"><img title="'
-                                            , m.member.name
-                                            , '" width="40" height="40" src="'
-                                            , T.thumb(m.member_photo ? m.member_photo.thumb_link : null)
-                                            , '" /></span>'].join(''));
-                        };
-                        while(l>0) pics.push(pic(l--));
-                        if(pics.length>0) markup.find("div.going .yes-pics").hide().html(pics.join('')).slideDown('fast');
-                      });
-                    });
+                      if (GlobalVars.bubble && GlobalVars.bubble.length > 0) {
+                          GlobalVars.bubble.hide();
+                          GlobalVars.bubble = undefined;
+                      }
+                      GlobalVars.bubble = $jq("#rsvp-" + event_id + "-" + cnt + " .prompt").empty().html(
+                          behave(markup)).show(function(){
+                              cli.rsvps(event_id, function(res) {
+                                  var f = res.filter(function(r){ return r.response === 'yes'; })
+                                  , l = Math.min(f.length, 5), pics = [], pic = function(i) {
+                                      var m = f[i-1];
+                                      return T.mua(['/' + ev.group.urlname, 'members', m.member.member_id].join('/')
+                                                   , ['<span class="mimg" data-member="',m.member.member_id,'"><img title="'
+                                                      , m.member.name
+                                                      , '" width="40" height="40" src="'
+                                                      , T.thumb(m.member_photo ? m.member_photo.thumb_link : null)
+                                                      , '" /></span>'].join(''));
+                                    };
+                                  while(l>0) pics.push(pic(l--));
+                                  if(pics.length>0) markup.find("div.going .yes-pics").hide().html(pics.join('')).slideDown('fast');
+                              });
+                          });
 
                   });
-
                 } else {
-                  if (GlobalVars.bubble && GlobalVars.bubble.length > 0) {
-                    GlobalVars.bubble.hide();
-                    GlobalVars.bubble = undefined;
-                  }
-                  GlobalVars.bubble = $jq("#rsvp-" + event_id + " .prompt").empty().html(T.event(null, null, null)).show();
+                    if (GlobalVars.bubble && GlobalVars.bubble.length > 0) {
+                        GlobalVars.bubble.hide();
+                        GlobalVars.bubble = undefined;
+                    }
+                    GlobalVars.bubble = $jq("#rsvp-" + event_id + " .prompt").empty().html(T.event(null, null, null)).show();
                 }
               });
             } else {
-              throw new Error('could not auth member');
+                throw new Error('could not auth member');
             }
+
           });
         }
-        // ensures that a server is accessible to dispatch calls to
-        , requireServer = function(cb) {
+
+         // ensures that a server is accessible to dispatch calls to
+         , requireServer = function(cb) {
           var iframe = $jq("#meetup-api");
           if(iframe[0]) {
             server = iframe[0].contentWindow;
@@ -1031,6 +1043,7 @@ var $jq;
            });
          });
        }
+
        // if data is null, request resulted in a 404
        , respondWith = function(uuid, data) {
            var cb = callbacks[uuid];
