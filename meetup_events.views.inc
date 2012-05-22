@@ -39,6 +39,8 @@ function meetup_events_views_data() {
       'sort' => array('handler' => 'views_handler_sort'),
     );
 
+    # TODO: add a custom views_handler to generate the RSVP url
+
     _meetup_events_define_view_reference($data, 'meetup_events', 'nid', 'Meetup Id', 'Meetup event id for the node', 'node', 'nid');
 
     return $data;
