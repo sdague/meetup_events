@@ -100,20 +100,37 @@ function meetup_events_fetch_duration($node, $dfield) {
   return $duration;
 }
 
+function meetup_events_display_rsvp(&$node) {
+  $api = variable_get('meetup_api', array());
+  $oauth_id = $api["oauth_key"];
+  if (!$oauth_id) {
+    return;
+  }
+
+  $meetup_id = meetup_events_get_meetupid($node->nid);
+  if (!$meetup_id) {
+    return;
+  }
+
+  drupal_add_js(
+    array('meetup_events' =>
+      array('oauth_key' => $api["oauth_key"])),
+    'setting'
+  );
+
+  drupal_add_js(drupal_get_path('module', 'meetup_events') . '/js/rsvp.js');
+  $node->content['meetup_rsvp'] = array(
+    '#value' => '<a href="http://www.meetup.com/Mid-Hudson-Astronomical-Association/events/' . $meetup_id . '/" data-event="' . $meetup_id . '" class="mu-rsvp-btn">RSVP</a>',
+    '#weight' => -10,
+  );
+}
+
 /**
  * Implementation of hook_nodeapi()
  */
 function meetup_events_nodeapi(&$node, $op, $a3, $a4) {
   if (($op == "view")) {
-    $meetup_id = meetup_events_get_meetupid($node->nid);
-    if ($meetup_id) {
-      drupal_add_js(drupal_get_path('module', 'meetup_events') . '/js/rsvp.js');
-      # TODO: make this so the meetup URL is coming from settings
-      $node->content['meetup_rsvp'] = array(
-        '#value' => '<a href="http://www.meetup.com/Mid-Hudson-Astronomical-Association/events/' . $meetup_id . '/" data-event="' . $meetup_id . '" class="mu-rsvp-btn">RSVP</a>',
-        '#weight' => -10,
-      );
-    }
+    meetup_events_display_rsvp($node);
   }
 
   if (($op == "insert") || ($op == "update")) {

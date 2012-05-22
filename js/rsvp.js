@@ -1,3 +1,5 @@
+Drupal.behaviors.meetup_events_rsvp = function(context) {
+
 window.mu = window.mu || {};
 var $jq;
 
@@ -1199,8 +1201,11 @@ var $jq;
   // auto execute rsvp btns method if client id is provided
   // as a script query string param
 
-  if(muargs && 'id' in muargs && !mu.inited) {
-    mu.api({client:muargs.id}, function(M) { M.rsvpBtns(); });
+  if(!mu.inited) {
+    mu.api({client:Drupal.settings.meetup_events.oauth_key},
+           function(M) { M.rsvpBtns(); }
+          );
   }
 
 }());
+}
