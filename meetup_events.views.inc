@@ -29,7 +29,7 @@ function meetup_events_views_data() {
 
   $data['meetup_events']['id'] = array(
     'title' => t("Meetup Event id"), // The item it appears as on the UI,
-    'help' => t("No help"), // The help that appears on the UI,
+    'help' => t("Numeric id for meetup event"), // The help that appears on the UI,
     // Information for displaying a title as a field
     'field' => array(
       'field' => 'id', // the real field
@@ -42,7 +42,7 @@ function meetup_events_views_data() {
 
   $data['meetup_events']['meetup_link'] = array(
     'title' => t("Meetup Event Link"), // The item it appears as on the UI,
-    'help' => t("No help"), // The help that appears on the UI,
+    'help' => t("A preformatted Meetup Event Link which supports the RSVP popup"), // The help that appears on the UI,
     // Information for displaying a title as a field
     'field' => array(
       'field' => 'id', // the real field
@@ -55,7 +55,7 @@ function meetup_events_views_data() {
 
   # TODO: add a custom views_handler to generate the RSVP url
 
-  _meetup_events_define_view_reference($data, 'meetup_events', 'nid', 'Meetup Id', 'Meetup event id for the node', 'node', 'nid');
+  # _meetup_events_define_view_reference($data, 'meetup_events', 'nid', 'Meetup Id', 'Meetup event id for the node', 'node', 'nid');
 
   return $data;
 }

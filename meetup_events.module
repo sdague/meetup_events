@@ -138,7 +138,8 @@ function meetup_events_display_rsvp(&$node) {
  */
 function meetup_events_nodeapi(&$node, $op, $a3, $a4) {
   if (($op == "view")) {
-    meetup_events_display_rsvp($node);
+    // TODO: need a sane option here
+    // meetup_events_display_rsvp($node);
   }
 
   if (($op == "insert") || ($op == "update")) {

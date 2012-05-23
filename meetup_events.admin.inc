@@ -189,7 +189,9 @@ function meetup_events_admin_settings() {
   $form['meetup_api']['opts'] = array(
     '#title' => t('Advanced Options'),
     '#type' => 'checkboxes',
-    '#options' => array('force_to_meetup' => 'Force RSVPs to Meetup.com' ),
+    '#options' => array(
+      'force_to_meetup' => 'Force RSVPs to Meetup.com',
+    ),
     '#default_value' => $api["opts"],
     '#description' => t('If your RSVPs require questions to be answered, you need to check this box to foce them to the meetup site to RSVP, otherwise you won\'t get that information.')
   );
