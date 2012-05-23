@@ -151,7 +151,7 @@ var $jq;
                       , ' '
                       , d.getDate()
                       , ' @ '
-                      , hrs(d.getHours() + 1)
+                      , hrs(d.getHours())
                       , mins(d.getMinutes())
                       , (d.getHours() > 11 ? 'pm' : 'am')].join('') : '';
      }
