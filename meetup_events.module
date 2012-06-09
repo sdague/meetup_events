@@ -53,9 +53,13 @@ function meetup_events_fetch_numeric($node, $vfield) {
   $parts = explode(":", $vfield);
 
   # if it's a single name, find and return it
-  if (!$parts[1]) {
+  if (!array_key_exists(1, $parts)) {
     $venue = $node->$vfield;
-    return $venue[0]["value"];
+    if (array_key_exists(0, $venue['und'])) {
+      return $venue['und'][0]["value"];
+    } else {
+      return NULL;
+    }
   }
 
   # if it's a referenced field, deconstruct and find it
@@ -63,10 +67,10 @@ function meetup_events_fetch_numeric($node, $vfield) {
   $field = $parts[1];
 
   $loc = $node->$ref;
-  $refnode = node_load(array("nid" => $loc[0]["nid"]));
+  $refnode = node_load(array("nid" => $loc['und'][0]["nid"]));
 
   $venue = $refnode->$field;
-  return $venue[0]["value"];
+  return $venue['und'][0]["value"];
 }
 
 /**
@@ -77,7 +81,8 @@ function meetup_events_fetch_date($node, $dfield) {
   date_default_timezone_set('UTC');
 
   $date = $node->$dfield;
-  $dtstart = new DateTime($date[0]["value"]);
+
+  $dtstart = new DateTime($date['und'][0]["value"]);
 
   // Make sure to reset the timezone, we really don't want this actually global
   date_default_timezone_set($tz);
@@ -94,8 +99,8 @@ function meetup_events_fetch_duration($node, $dfield) {
   $duration = 0;
 
   $date = $node->$dfield;
-  $dtstart = new DateTime($date[0]["value"]);
-  $dtend = new DateTime($date[0]["value2"]);
+  $dtstart = new DateTime($date['und'][0]["value"]);
+  $dtend = new DateTime($date['und'][0]["value2"]);
   if ($dtend) {
     $duration = $dtend->getTimestamp() - $dtstart->getTimestamp();
   }
@@ -141,18 +146,16 @@ function meetup_events_display_rsvp(&$node) {
 /**
  * Implementation of hook_nodeapi()
  */
-function meetup_events_nodeapi(&$node, $op, $a3, $a4) {
-  if (($op == "view")) {
-    // TODO: need a sane option here
-    // meetup_events_display_rsvp($node);
+function meetup_events_node_insert($node) {
+  if (meetup_events_is_type_syncable($node->type)) {
+    meetup_events_sync_event($node);
   }
+}
 
-  if (($op == "insert") || ($op == "update")) {
-    if (meetup_events_is_type_syncable($node->type)) {
-      meetup_events_sync_event($node);
-    }
+function meetup_events_node_update($node) {
+  if (meetup_events_is_type_syncable($node->type)) {
+    meetup_events_sync_event($node);
   }
-  # TODO: enable delete
 }
 
 function meetup_events_options_for($type) {
@@ -229,7 +232,7 @@ function meetup_events_node_data($node) {
     "key" => $api["key"],
     "group_id" => $api["group"],
     "name" => $node->title,
-    "description" => token_replace($options["body"], 'node', $node),
+    "description" => token_replace($options["body"], array('node' => $node)),
     "time" => $date->getTimestamp() * 1000,
   );
 
@@ -256,14 +259,17 @@ function meetup_events_node_data($node) {
 }
 
 function meetup_events_delete_event($id) {
-  $request_url = "https://api.meetup.com/2/event/$id";
-  $request_headers = array(
-    'Content-Type' => 'application/x-www-form-urlencoded',
-    'Accept-Charset' => 'utf-8');
-  $request_method = 'DELETE';
-  $data = array();
+  $options = array(
+    'headers' => array(
+      'Content-Type' => 'application/x-www-form-urlencoded',
+      'Accept-Charset' => 'utf-8'),
+    'method' => 'DELETE',
+    'data' => array()
+  );
 
-  $res = drupal_http_request($request_url, $request_headers, $request_method, $data);
+  $request_url = "https://api.meetup.com/2/event/$id";
+
+  $res = drupal_http_request($request_url, $options);
   # drupal_set_message("Update '" . $res->data . "'");
   if ($res->data) {
     drupal_set_message("Deleted event from meetup");
@@ -273,15 +279,16 @@ function meetup_events_delete_event($id) {
 }
 
 function meetup_events_update_event($id, $node) {
+  $options = array(
+    'headers' => array(
+      'Content-Type' => 'application/x-www-form-urlencoded',
+      'Accept-Charset' => 'utf-8'),
+    'method' => 'POST',
+    'data' => meetup_events_node_data($node)
+  );
   $request_url = "https://api.meetup.com/2/event/$id";
-  $request_headers = array(
-    'Content-Type' => 'application/x-www-form-urlencoded',
-    'Accept-Charset' => 'utf-8');
-  $request_method = 'POST';
 
-  $data = meetup_events_node_data($node);
-
-  $res = drupal_http_request($request_url, $request_headers, $request_method, $data);
+  $res = drupal_http_request($request_url, $options);
   # drupal_set_message("Update '" . $res->data . "'");
   $data = json_decode($res->data);
   if ($data->id) {
@@ -292,19 +299,21 @@ function meetup_events_update_event($id, $node) {
 }
 
 function meetup_events_create_event($node) {
-  $request_url = "https://api.meetup.com/2/event";
-  $request_headers = array(
-    'Content-Type' => 'application/x-www-form-urlencoded',
-    'Accept-Charset' => 'utf-8');
-  $request_method = 'POST';
+  $options = array(
+    'headers' => array(
+      'Content-Type' => 'application/x-www-form-urlencoded',
+      'Accept-Charset' => 'utf-8'),
+    'method' => 'POST',
+    'data' => meetup_events_node_data($node)
+  );
 
-  $data = meetup_events_node_data($node);
+  $request_url = "https://api.meetup.com/2/event";
 
   # TODO: validate data as sane before sending out
   # TODO: refactor to a seperate upstream call
 
-  $res = drupal_http_request($request_url, $request_headers, $request_method, $data);
-#  drupal_set_message("Create '" . $res->data . "'");
+  $res = drupal_http_request($request_url, $options);
+  # drupal_set_message("Create '" . $res->data . "'");
   $data = json_decode($res->data);
   if ($data->id) {
     meetup_events_save_meetupid($node->nid, $data->id);
