@@ -16,45 +16,70 @@
 function meetup_events_get_numeric_fields_for_type($type) {
   $fields = array("none" => "none");
   # first get all number fields that are on the type
-  $results = db_query("SELECT c.field_name, c.label from {content_node_field_instance} c INNER JOIN {node_type} n ON c.type_name=n.type where c.widget_module='number' and c.type_name='%s' ORDER BY n.name, c.label", $type);
-  while($obj = db_fetch_object($results)) {
-    $fields[$obj->field_name] = $obj->label;
+  $query = db_select('node_type', 'n');
+  $query->join('field_config_instance', 'fci', 'fci.bundle=n.type');
+  $query->join('field_config', 'fc', 'fci.field_id=fc.id');
+  $results = $query->fields('fc', array('field_name'))
+    ->condition('fc.type', 'number_integer')
+    ->execute();
+
+  #$results = db_query("SELECT c.field_name, c.label from {content_node_field_instance} c INNER JOIN {node_type} n ON c.type_name=n.type where c.widget_module='number' and c.type_name='%s' ORDER BY n.name, c.label", $type);
+  foreach ($results as $obj) {
+    $fields[$obj->field_name] = $obj->field_name;
   }
 
   # then get all number fields that are on the nodereferences
-  $results = db_query("SELECT c.field_name, c.label, cnf.global_settings from {content_node_field_instance} c INNER JOIN {node_type} n ON c.type_name=n.type INNER JOIN {content_node_field} cnf ON c.field_name=cnf.field_name where c.widget_module='nodereference' and c.type_name='%s' ORDER BY n.name, c.label", $type);
-  while($obj = db_fetch_object($results)) {
-    $field = $obj->field_name;
-    $label = $obj->label;
-    $ref_types = unserialize($obj->global_settings);
+  /* $results = db_query("SELECT c.field_name, c.label, cnf.global_settings from {content_node_field_instance} c INNER JOIN {node_type} n ON c.type_name=n.type INNER JOIN {content_node_field} cnf ON c.field_name=cnf.field_name where c.widget_module='nodereference' and c.type_name='%s' ORDER BY n.name, c.label", $type); */
+  /* while($obj = db_fetch_object($results)) { */
+  /*   $field = $obj->field_name; */
+  /*   $label = $obj->label; */
+  /*   $ref_types = unserialize($obj->global_settings); */
 
-    foreach ($ref_types["referenceable_types"] as $key => $value) {
-      if ($value) {
-        # and then see what numbers they have
-        $ref_results = db_query("SELECT c.field_name, c.label from {content_node_field_instance} c INNER JOIN {node_type} n ON c.type_name=n.type where c.widget_module='number' and c.type_name='%s' ORDER BY n.name, c.label", $key);
-        while($ref = db_fetch_object($ref_results)) {
-          $fields[$field . ":" . $ref->field_name] = $label . " (node ref) => " . $ref->label;
-        }
-      }
-    }
-  }
+  /*   foreach ($ref_types["referenceable_types"] as $key => $value) { */
+  /*     if ($value) { */
+  /*       # and then see what numbers they have */
+  /*       $ref_results = db_query("SELECT c.field_name, c.label from {content_node_field_instance} c INNER JOIN {node_type} n ON c.type_name=n.type where c.widget_module='number' and c.type_name='%s' ORDER BY n.name, c.label", $key); */
+  /*       while($ref = db_fetch_object($ref_results)) { */
+  /*         $fields[$field . ":" . $ref->field_name] = $label . " (node ref) => " . $ref->label; */
+  /*       } */
+  /*     } */
+  /*   } */
+  /* } */
   return $fields;
 }
 
 function meetup_events_get_date_fields_for_type($type) {
   $fields = array();
-  $results = db_query("SELECT c.field_name, c.label from {content_node_field_instance} c INNER JOIN {node_type} n ON c.type_name=n.type where c.widget_module='date' and c.type_name='%s' ORDER BY n.name, c.label", $type);
-  while($obj = db_fetch_object($results)) {
-    $fields[$obj->field_name] = $obj->label;
+  $query = db_select('node_type', 'n');
+  $query->join('field_config_instance', 'fci', 'fci.bundle=n.type');
+  $query->join('field_config', 'fc', 'fci.field_id=fc.id');
+
+  $results = $query->fields('n', array('name', 'type'))
+    ->fields('fc', array('field_name'))
+    ->fields('fci', array('data'))
+    ->condition('fc.module', 'date')
+    ->condition('n.type', $type)
+    ->execute();
+
+  foreach ($results as $obj) {
+    $fields[$obj->field_name] = $obj->field_name;
   }
   return $fields;
 }
 
 function meetup_events_get_allowed_types() {
   $options = array();
-  $results = db_query("SELECT c.type_name, n.name from {content_node_field_instance} c INNER JOIN {node_type} n ON c.type_name=n.type where c.widget_module='date' ORDER BY n.name, c.label");
-  while($obj = db_fetch_object($results)) {
-    $options[$obj->type_name] = $obj->name;
+  $query = db_select('node_type', 'n');
+  $query->join('field_config_instance', 'fci', 'fci.bundle=n.type');
+  $query->join('field_config', 'fc', 'fci.field_id=fc.id');
+
+  $results = $query->fields('n', array('name', 'type'))
+    ->fields('n', array('name', 'type'))
+    ->condition('fc.module', 'date')
+    ->execute();
+
+  foreach($results as $obj) {
+    $options[$obj->type] = $obj->name;
   }
   return $options;
 }
@@ -63,12 +88,38 @@ function meetup_events_get_allowed_types() {
  * Form for main settings page
  */
 
+
+function meetup_events_get_settings() {
+  $settings = variable_get("meetup_events", array());
+  $options = meetup_events_get_allowed_types();
+
+  foreach ($options as $type => $name) {
+    $key = $type . "_enabled";
+    if (!array_key_exists($key, $settings)) {
+      $settings[$key] = FALSE;
+    }
+
+    if (!array_key_exists($type, $settings)) {
+      $settings[$type] = array(
+        'date_field' => NULL,
+        'body' => t("Come to our awesome meetup!"),
+        'venue_field' => NULL,
+        'venue_lat' => NULL,
+        'venue_lon' => NULL,
+      );
+    }
+
+  }
+
+  return $settings;
+}
+
 function meetup_events_admin_settings() {
   ctools_include('dependent');
 
   $options = meetup_events_get_allowed_types();
 
-  $settings = variable_get("meetup_events", array());
+  $settings = meetup_events_get_settings();
 
   $form["meetup_events"] = array(
     '#type' => 'fieldset',
@@ -97,7 +148,6 @@ function meetup_events_admin_settings() {
       '#id' => 'group-' . $dashtype,
       '#prefix' => '<div id="group-' . $dashtype. '-wrapper">', # <div id="group-' . $type . '">',
       '#suffix' => '</div>', # </div>',
-      '#process' => array('ctools_dependent_process','expand_checkboxes'),
       '#dependency' => array("edit-meetup-events-" . $dashtype . "-enabled-" . $dashtype => array(TRUE))
     );
 
@@ -161,7 +211,12 @@ function meetup_events_admin_settings() {
     '#title' => t('Meetup.com API information'),
   );
 
-  $api = variable_get('meetup_api', array());
+  $api = variable_get('meetup_api', array(
+           'key' => "",
+           'group_url' => "",
+           'oauth_key' => "",
+           'opts' => array(),
+         ));
 
   $form['meetup_api']['key'] = array(
     '#type' => 'textfield',

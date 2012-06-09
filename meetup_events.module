@@ -18,14 +18,19 @@ function meetup_events_init() {
  * Implementation of hook_perm()
  */
 function meetup_events_perm() {
-  return array('administer meetup events');
+  return array(
+    'administer meetup events' => array(
+      'title' => t('Administer Meetup Events'),
+      'description' => t('Create linkage to meetup events')
+    )
+  );
 }
 
 /**
  * Implementaiton of hook_menu()
  */
 function meetup_events_menu() {
-  $items['admin/settings/meetup_events'] = array(
+  $items['admin/config/system/meetup_events'] = array(
     'title' => 'Meetup Events',
     'description' => 'Setup Meetup Event synchronization',
     'page callback' => 'drupal_get_form',
@@ -191,7 +196,12 @@ function meetup_events_save_meetupid($nid, $id) {
 }
 
 function meetup_events_get_meetupid($nid) {
-  $event = db_fetch_object(db_query("SELECT id from {meetup_events} where nid=%d", $nid));
+  $query = db_select('meetup_events', 'm')
+    ->fields('m', array('id'))
+    ->condition('m.nid', $nid)
+    ->execute();
+  $event = $query->fetchObject();
+
   if (!$event) {
     return NULL;
   } else {
