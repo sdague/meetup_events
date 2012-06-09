@@ -5,20 +5,6 @@
  */
 
 /**
- *  Implementation of hook_install()
- */
-function meetup_events_install() {
-  drupal_install_schema('meetup_events');
-}
-
-/**
- *  Implementation of hook_uninstall()
- */
-function meetup_events_uninstall() {
-  drupal_uninstall_schema('meetup_events');
-}
-
-/**
  *  Implementation of hook_schema()
  */
 function meetup_events_schema() {
