@@ -1,6 +1,0 @@
-name = Node Reference Tokens
-description = Add tokens for node reference body / teaser
-core = 6.x
-dependencies[] = 'token'
-
-
