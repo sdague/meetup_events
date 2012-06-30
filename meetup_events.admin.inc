@@ -13,14 +13,15 @@
 
 // ctools_include('dependent');
 
-function meetup_events_get_numeric_fields_for_type($type) {
+function meetup_events_get_numeric_fields_for_type($type, $numtype) {
   $fields = array("none" => "none");
   # first get all number fields that are on the type
   $query = db_select('node_type', 'n');
   $query->join('field_config_instance', 'fci', 'fci.bundle=n.type');
   $query->join('field_config', 'fc', 'fci.field_id=fc.id');
   $results = $query->fields('fc', array('field_name'))
-    ->condition('fc.type', 'number_integer')
+    ->condition('fc.type', $numtype)
+    ->condition('n.type', $type)
     ->execute();
 
   #$results = db_query("SELECT c.field_name, c.label from {content_node_field_instance} c INNER JOIN {node_type} n ON c.type_name=n.type where c.widget_module='number' and c.type_name='%s' ORDER BY n.name, c.label", $type);
@@ -29,22 +30,33 @@ function meetup_events_get_numeric_fields_for_type($type) {
   }
 
   # then get all number fields that are on the nodereferences
-  /* $results = db_query("SELECT c.field_name, c.label, cnf.global_settings from {content_node_field_instance} c INNER JOIN {node_type} n ON c.type_name=n.type INNER JOIN {content_node_field} cnf ON c.field_name=cnf.field_name where c.widget_module='nodereference' and c.type_name='%s' ORDER BY n.name, c.label", $type); */
-  /* while($obj = db_fetch_object($results)) { */
-  /*   $field = $obj->field_name; */
-  /*   $label = $obj->label; */
-  /*   $ref_types = unserialize($obj->global_settings); */
+  $query = db_select('node_type', 'n');
+  $query->join('field_config_instance', 'fci', 'fci.bundle=n.type');
+  $query->join('field_config', 'fc', 'fci.field_id=fc.id');
+  $results = $query->fields('fc', array('field_name', 'data'))
+    ->condition('fc.type', 'node_reference')
+    ->condition('n.type', $type)
+    ->execute();
 
-  /*   foreach ($ref_types["referenceable_types"] as $key => $value) { */
-  /*     if ($value) { */
-  /*       # and then see what numbers they have */
-  /*       $ref_results = db_query("SELECT c.field_name, c.label from {content_node_field_instance} c INNER JOIN {node_type} n ON c.type_name=n.type where c.widget_module='number' and c.type_name='%s' ORDER BY n.name, c.label", $key); */
-  /*       while($ref = db_fetch_object($ref_results)) { */
-  /*         $fields[$field . ":" . $ref->field_name] = $label . " (node ref) => " . $ref->label; */
-  /*       } */
-  /*     } */
-  /*   } */
-  /* } */
+  foreach ($results as $obj) {
+    $data = unserialize($obj->data);
+
+    foreach ($data["settings"]["referenceable_types"] as $key => $value) {
+      if ($value) {
+        $query = db_select('node_type', 'n');
+        $query->join('field_config_instance', 'fci', 'fci.bundle=n.type');
+        $query->join('field_config', 'fc', 'fci.field_id=fc.id');
+        $results2 = $query->fields('fc', array('field_name'))
+          ->condition('fc.type', $numtype)
+          ->condition('n.type', $value)
+          ->execute();
+        foreach ($results2 as $obj2) {
+          $fields[$value . ":" . $obj2->field_name] = $value . " => " . $obj2->field_name;
+        }
+      }
+    }
+  }
+
   return $fields;
 }
 
@@ -87,8 +99,6 @@ function meetup_events_get_allowed_types() {
 /***
  * Form for main settings page
  */
-
-
 function meetup_events_get_settings() {
   $settings = variable_get("meetup_events", array());
   $options = meetup_events_get_allowed_types();
@@ -163,7 +173,7 @@ function meetup_events_admin_settings() {
       '#title' => t("Venue Id Field"),
       '#description' => 'Which numeric field should we use for numeric venue id for meetup (can be on a referenced node)',
       '#type' => 'select',
-      '#options' => meetup_events_get_numeric_fields_for_type($type),
+      '#options' => meetup_events_get_numeric_fields_for_type($type, 'number_integer'),
       '#default_value' => $settings[$type]["venue_field"],
     );
 
@@ -171,7 +181,7 @@ function meetup_events_admin_settings() {
       '#title' => t("Venue Latitude Field"),
       '#description' => 'Which numeric field should we use for Latitude to force the position of the map marker (optional)',
       '#type' => 'select',
-      '#options' => meetup_events_get_numeric_fields_for_type($type),
+      '#options' => meetup_events_get_numeric_fields_for_type($type, 'number_float'),
       '#default_value' => $settings[$type]["venue_lat"],
     );
 
@@ -179,7 +189,7 @@ function meetup_events_admin_settings() {
       '#title' => t("Venue Longitude Field"),
       '#description' => 'Which numeric field should we use for Longitude to force the position of the map marker (optional)',
       '#type' => 'select',
-      '#options' => meetup_events_get_numeric_fields_for_type($type),
+      '#options' => meetup_events_get_numeric_fields_for_type($type, 'number_float'),
       '#default_value' => $settings[$type]["venue_lon"],
     );
 
@@ -191,7 +201,7 @@ function meetup_events_admin_settings() {
     );
 
     if (module_exists('token')) {
-      $form["meetup_events"][$type]['view']['token_help'] = array(
+      $form["meetup_events"][$type]['view']['token_help'] =  array(
         '#title' => t('Replacement patterns'),
         '#type' => 'fieldset',
         '#collapsible' => TRUE,
@@ -200,7 +210,7 @@ function meetup_events_admin_settings() {
       );
 
       $form["meetup_events"][$type]['view']['token_help']['help'] = array(
-        '#value' => theme('token_help', 'node'),
+        '#markup' => theme('token_tree', array('token_types' => 'all', 'click_insert' => FALSE, 'show_restricted' => TRUE))
       );
     }
   }
