@@ -51,7 +51,7 @@ function meetup_events_get_numeric_fields_for_type($type, $numtype) {
           ->condition('n.type', $value)
           ->execute();
         foreach ($results2 as $obj2) {
-          $fields[$value . ":" . $obj2->field_name] = $value . " => " . $obj2->field_name;
+          $fields[$obj->field_name . ":" . $obj2->field_name] = $obj->field_name . " => " . $obj2->field_name;
         }
       }
     }
