@@ -9,39 +9,39 @@ class MeetupEventsTestCase extends DrupalWebTestCase {
   public $format = "Y-m-d H:i";
 
   public function createDateField($type) {
-    $datefield = array (
+    $datefield = array(
       'field_name' => 'field_date',
       'type_name' => $type,
       'display_settings' =>
-      array (
+      array(
         'weight' => '-4',
         'parent' => '',
         'label' =>
-        array (
+        array(
           'format' => 'inline',
         ),
         'teaser' =>
-        array (
+        array(
           'format' => 'default',
           'exclude' => 0,
         ),
         'full' =>
-        array (
+        array(
           'format' => 'default',
           'exclude' => 0,
         ),
         4 =>
-        array (
+        array(
           'format' => 'default',
           'exclude' => 0,
         ),
         5 =>
-        array (
+        array(
           'format' => 'default',
           'exclude' => 0,
         ),
         'token' =>
-        array (
+        array(
           'format' => 'default',
           'exclude' => 0,
         ),
@@ -55,33 +55,33 @@ class MeetupEventsTestCase extends DrupalWebTestCase {
       'active' => '1',
       'locked' => '0',
       'columns' =>
-      array (
+      array(
         'value' =>
-        array (
+        array(
           'type' => 'varchar',
           'length' => 20,
-          'not null' => false,
-          'sortable' => true,
-          'views' => true,
+          'not null' => FALSE,
+          'sortable' => TRUE,
+          'views' => TRUE,
         ),
         'value2' =>
-        array (
+        array(
           'type' => 'varchar',
           'length' => 20,
-          'not null' => false,
-          'sortable' => true,
-          'views' => false,
+          'not null' => FALSE,
+          'sortable' => TRUE,
+          'views' => FALSE,
         ),
         'rrule' =>
-        array (
+        array(
           'type' => 'text',
-          'not null' => false,
-          'sortable' => false,
-          'views' => false,
+          'not null' => FALSE,
+          'sortable' => FALSE,
+          'views' => FALSE,
         ),
       ),
       'granularity' =>
-      array (
+      array(
         'year' => 'year',
         'month' => 'month',
         'day' => 'day',
@@ -95,7 +95,7 @@ class MeetupEventsTestCase extends DrupalWebTestCase {
       'repeat_collapsed' => '1',
       'default_format' => 'default',
       'widget' =>
-      array (
+      array(
         'default_value' => 'now',
         'default_value_code' => '',
         'default_value2' => 'same',
@@ -104,7 +104,7 @@ class MeetupEventsTestCase extends DrupalWebTestCase {
         'input_format_custom' => '',
         'increment' => '15',
         'text_parts' =>
-        array (
+        array(
         ),
         'year_range' => '-7:+3',
         'label_position' => 'above',
@@ -161,13 +161,11 @@ class MeetupEventsTestCase extends DrupalWebTestCase {
     $this->drupalPost(NULL, $options, t('Create'));
   }
 
-  public function Get($url)
-  {
+  public function Get($url) {
     return $this->drupalGet($url);
   }
 
-  public function Post($one, $two, $three)
-  {
+  public function Post($one, $two, $three) {
     return $this->drupalPost($one, $two, $three);
   }
 
