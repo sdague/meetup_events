@@ -320,11 +320,11 @@ function meetup_events_create_event($node) {
   # TODO: refactor to a seperate upstream call
 
   $res = drupal_http_request($request_url, $options);
-  # drupal_set_message("Create '" . $res->data . "'");
   $data = json_decode($res->data);
   if ($data->id) {
     meetup_events_save_meetupid($node->nid, $data->id);
-    drupal_set_message("Saved to <a href='" . $data->event_url .  "'>Meetup</a>");
+    drupal_set_message(t("Saved to <a href=\"@url\">Meetup</a>",
+        array('@url' => $data->event_url)));
   } else {
     drupal_set_message("Failed to save to Meetup, you should try again later");
   }
