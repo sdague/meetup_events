@@ -13,11 +13,6 @@
  *  }
  */
 
-function meetup_events_init() {
-  require_once DRUPAL_ROOT . '/' . drupal_get_path('module', 'meetup_events') .
-    "/meetup_events.views.inc";
-}
-
 /**
  * Implements hook_permission().
  */
@@ -123,7 +118,7 @@ function meetup_events_display_rsvp(&$node) {
     return;
   }
 
-  # only bother doing anything on nodes that are actually in meetup
+  // only bother doing anything on nodes that are actually in meetup
   $meetup_id = meetup_events_get_meetupid($node->nid);
   if (!$meetup_id) {
     return;
@@ -220,8 +215,8 @@ function meetup_events_get_meetupid($nid) {
 }
 
 function meetup_events_node_data($node) {
-  # This is a hack, but it works. There should be a way to do timezone
-  # gymnastics on the DateTime field, but I'm not sure what that is yet.
+  // This is a hack, but it works. There should be a way to do timezone
+  // gymnastics on the DateTime field, but I'm not sure what that is yet.
   $options = meetup_events_options_for($node->type);
   $api = variable_get('meetup_api', array());
 
@@ -230,11 +225,11 @@ function meetup_events_node_data($node) {
     return;
   }
 
-  # TODO: validate date is in the future or don't submit
+  // TODO: validate date is in the future or don't submit
   $date = meetup_events_fetch_date($node, $options["date_field"]);
 
-  # TODO: validate key / group look sane or don't submit
-  # TODO: add duration
+  // TODO: validate key / group look sane or don't submit
+  // TODO: add duration
   $data = array(
     "key" => $api["key"],
     "group_id" => $api["group"],
@@ -251,7 +246,7 @@ function meetup_events_node_data($node) {
   $venue = meetup_events_fetch_numeric($node, $options["venue_field"]);
   if ($venue) {
     $data["venue_id"] = $venue;
-    # lat / lon fetching, only work if there is valid venue and both are valid
+    // lat / lon fetching, only work if there is valid venue and both are valid
     $lat = meetup_events_fetch_numeric($node, $options["venue_lat"]);
     $lon = meetup_events_fetch_numeric($node, $options["venue_lon"]);
     if ($lat && $lon) {
@@ -316,15 +311,16 @@ function meetup_events_create_event($node) {
 
   $request_url = "https://api.meetup.com/2/event";
 
-  # TODO: validate data as sane before sending out
-  # TODO: refactor to a seperate upstream call
+  // TODO: validate data as sane before sending out
+  // TODO: refactor to a seperate upstream call
 
   $res = drupal_http_request($request_url, $options);
   $data = json_decode($res->data);
   if ($data->id) {
     meetup_events_save_meetupid($node->nid, $data->id);
-    drupal_set_message(t("Saved to <a href=\"@url\">Meetup</a>",
-        array('@url' => $data->event_url)));
+    meetup_events_update_event($data->id, $node);
+      //    drupal_set_message(t("Saved to <a href=\"@url\">Meetup</a>",
+      //  array('@url' => $data->event_url)));
   } else {
     drupal_set_message("Failed to save to Meetup, you should try again later");
   }
