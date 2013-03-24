@@ -246,13 +246,13 @@ function meetup_events_node_data($node) {
   $venue = meetup_events_fetch_numeric($node, $options["venue_field"]);
   if ($venue) {
     $data["venue_id"] = $venue;
-    // lat / lon fetching, only work if there is valid venue and both are valid
-    $lat = meetup_events_fetch_numeric($node, $options["venue_lat"]);
-    $lon = meetup_events_fetch_numeric($node, $options["venue_lon"]);
-    if ($lat && $lon) {
-      $data["lat"] = $lat;
-      $data["lon"] = $lon;
-    }
+  }
+  // lat / lon fetching, only work if there is valid venue and both are valid
+  $lat = meetup_events_fetch_numeric($node, $options["venue_lat"]);
+  $lon = meetup_events_fetch_numeric($node, $options["venue_lon"]);
+  if ($lat && $lon) {
+    $data["lat"] = $lat;
+    $data["lon"] = $lon;
   }
 
   $request_data = http_build_query($data, '', '&');
