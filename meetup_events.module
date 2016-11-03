@@ -234,7 +234,9 @@ function meetup_events_node_data($node) {
     "key" => $api["key"],
     "group_id" => $api["group"],
     "name" => $node->title,
-    "description" => token_replace($options["body"], array('node' => $node)),
+    "description" => token_replace($options["body"],
+                   array('node' => $node),
+                   array('clear' => TRUE)),
     "time" => $date->getTimestamp() * 1000,
   );
 
