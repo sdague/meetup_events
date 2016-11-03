@@ -15,7 +15,7 @@
 
 function meetup_events_get_numeric_fields_for_type($type, $numtype) {
   $fields = array("none" => "none");
-  // first get all number fields that are on the type
+  # first get all number fields that are on the type
   $query = db_select('node_type', 'n');
   $query->join('field_config_instance', 'fci', 'fci.bundle=n.type');
   $query->join('field_config', 'fc', 'fci.field_id=fc.id');
@@ -24,11 +24,12 @@ function meetup_events_get_numeric_fields_for_type($type, $numtype) {
     ->condition('n.type', $type)
     ->execute();
 
+  #$results = db_query("SELECT c.field_name, c.label from {content_node_field_instance} c INNER JOIN {node_type} n ON c.type_name=n.type where c.widget_module='number' and c.type_name='%s' ORDER BY n.name, c.label", $type);
   foreach ($results as $obj) {
     $fields[$obj->field_name] = $obj->field_name;
   }
 
-  // then get all number fields that are on the nodereferences
+  # then get all number fields that are on the nodereferences
   $query = db_select('node_type', 'n');
   $query->join('field_config_instance', 'fci', 'fci.bundle=n.type');
   $query->join('field_config', 'fc', 'fci.field_id=fc.id');
@@ -143,6 +144,9 @@ function meetup_events_admin_settings() {
       '#type' => 'checkboxes',
       '#options' => array($type => $name),
       '#default_value' => $settings[$type . "_enabled"],
+      # '#description' => t('Only nodes of these types will be synchronized to meetup.
+      #Because meetup requires dates, only node types that can support date fields
+      #are eligible for syncing.')
     );
 
     $dates = meetup_events_get_date_fields_for_type($type);
@@ -152,8 +156,8 @@ function meetup_events_admin_settings() {
       '#type' => 'fieldset',
       '#input' => TRUE,
       '#id' => 'group-' . $dashtype,
-      '#prefix' => '<div id="group-' . $dashtype. '-wrapper">',
-      '#suffix' => '</div>',
+      '#prefix' => '<div id="group-' . $dashtype. '-wrapper">', # <div id="group-' . $type . '">',
+      '#suffix' => '</div>', # </div>',
       '#dependency' => array("edit-meetup-events-" . $dashtype . "-enabled-" . $dashtype => array(TRUE))
     );
 
@@ -202,6 +206,7 @@ function meetup_events_admin_settings() {
         '#type' => 'fieldset',
         '#collapsible' => TRUE,
         '#collapsed' => TRUE,
+        //      '#description' => t('Prefer raw-text replacements for text to avoid problems with HTML entities!'),
       );
 
       $form["meetup_events"][$type]['view']['token_help']['help'] = array(
@@ -237,6 +242,25 @@ function meetup_events_admin_settings() {
     '#description' => t('The meetup group url. This will be the name of your group after http://meetup.com/<u><b>Group-URL</b></u>'),
   );
 
+  $form['meetup_api']['oauth_key'] = array(
+    '#type' => 'textfield',
+    '#title' => t('OAuth Key'),
+    '#default_value' => $api["oauth_key"],
+    '#description' => t('If you want to enable RSVP dynamic widgets, you need to register for an oauth id at meetup and add it here'),
+  );
+
+  $api["opts"] = ($api["opts"]) ? $api["opts"] : array();
+
+  $form['meetup_api']['opts'] = array(
+    '#title' => t('Advanced Options'),
+    '#type' => 'checkboxes',
+    '#options' => array(
+      'force_to_meetup' => 'Force RSVPs to Meetup.com',
+    ),
+    '#default_value' => $api["opts"],
+    '#description' => t('If your RSVPs require questions to be answered, you need to check this box to foce them to the meetup site to RSVP, otherwise you won\'t get that information.')
+  );
+
   return system_settings_form($form);
 }
 
@@ -256,7 +280,7 @@ function meetup_events_admin_settings_validate($form, &$form_state) {
   );
   $request_url .= http_build_query($rawdata, '', '&');
 
-  // TODO: validate the key seperately than group_url?
+  # TODO: validate the key seperately than group_url?
 
   $res = drupal_http_request($request_url, $request_headers, $request_method, '');
   $resp = json_decode($res->data);
@@ -268,8 +292,8 @@ function meetup_events_admin_settings_validate($form, &$form_state) {
     }
   }
 
-  // TODO: other validations we should make?
-  // if we didn't find an id, assume things are wrong
+  # TODO: other validations we should make?
+  # if we didn't find an id, assume things are wrong
   if (!$form_state["values"]["meetup_api"]["group"]) {
     form_set_error('meetup_api][group_url', t("Must specify valid group url"));
   }

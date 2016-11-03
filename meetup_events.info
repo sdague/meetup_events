@@ -4,5 +4,3 @@ core = 7.x
 dependencies[] = 'date'
 dependencies[] = 'ctools'
 
-files[] = meetup_events.module
-files[] = meetup_events.admin.inc
