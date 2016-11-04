@@ -43,37 +43,6 @@ function meetup_events_menu() {
 }
 
 /**
- * This function fetches a numeric field which might be on a node reference
- */
-function meetup_events_fetch_numeric($node, $vfield) {
-  if (!$vfield or ($vfield == "none")) {
-    return;
-  }
-
-  $parts = explode(":", $vfield);
-
-  # if it's a single name, find and return it
-  if (!array_key_exists(1, $parts)) {
-    $venue = $node->$vfield;
-    if (array_key_exists(0, $venue['und'])) {
-      return $venue['und'][0]["value"];
-    } else {
-      return NULL;
-    }
-  }
-
-  # if it's a referenced field, deconstruct and find it
-  $ref = $parts[0];
-  $field = $parts[1];
-
-  $loc = $node->$ref;
-  $refnode = node_load(array("nid" => $loc['und'][0]["nid"]));
-
-  $venue = $refnode->$field;
-  return $venue['und'][0]["value"];
-}
-
-/**
  * Guess the venue idea base on known node location
  */
 function meetup_events_guess_venueid(&$node, $fieldname) {
@@ -217,9 +186,6 @@ function meetup_events_options_for($type) {
   $options["enabled"] = ($values[$type . "_enabled"][$type]) ? TRUE : FALSE;
   $options["date_field"] = $values[$type]["date_field"];
   $options["venue_name_field"] = $values[$type]["venue_name_field"];
-  $options["venue_field"] = $values[$type]["venue_field"];
-  $options["venue_lat"] = $values[$type]["venue_lat"];
-  $options["venue_lon"] = $values[$type]["venue_lon"];
   $options["body"] = $values[$type]["body"];
   return $options;
 }
@@ -296,23 +262,12 @@ function meetup_events_node_data($node) {
   if ($duration) {
     $data["duration"] = $duration * 1000;
   }
+  // see if we match a venue, if so, set it.
   $venue_id = meetup_events_guess_venueid($node, $options["venue_name_field"]);
   if ($venue_id) {
     $data["venue_id"] = $venue_id;
-  } else {
-    // Legacy Approach, which doesn't really work any more.
-    $venue = meetup_events_fetch_numeric($node, $options["venue_field"]);
-    if ($venue) {
-      $data["venue_id"] = $venue;
-      # lat / lon fetching, only work if there is valid venue and both are valid
-      $lat = meetup_events_fetch_numeric($node, $options["venue_lat"]);
-      $lon = meetup_events_fetch_numeric($node, $options["venue_lon"]);
-      if ($lat && $lon) {
-        $data["lat"] = $lat;
-        $data["lon"] = $lon;
-      }
-    }
   }
+
   $request_data = http_build_query($data, '', '&');
 
   return $request_data;

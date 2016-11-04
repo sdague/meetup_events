@@ -114,9 +114,6 @@ function meetup_events_get_settings() {
         'date_field' => NULL,
         'body' => t("Come to our awesome meetup!"),
         'venue_name_field' => NULL,
-        'venue_field' => NULL,
-        'venue_lat' => NULL,
-        'venue_lon' => NULL,
       );
     }
 
@@ -183,30 +180,6 @@ function meetup_events_admin_settings() {
       '#default_value' => $settings[$type]["venue_name_field"],
     );
 
-    $form["meetup_events"][$type]["venue_field"] = array(
-      '#title' => t("Venue Id Field"),
-      '#description' => 'Which numeric field should we use for numeric venue id for meetup (can be on a referenced node)',
-      '#type' => 'select',
-      '#options' => meetup_events_get_numeric_fields_for_type($type, 'number_integer'),
-      '#default_value' => $settings[$type]["venue_field"],
-    );
-
-    $form["meetup_events"][$type]["venue_lat"] = array(
-      '#title' => t("Venue Latitude Field"),
-      '#description' => 'Which numeric field should we use for Latitude to force the position of the map marker (optional)',
-      '#type' => 'select',
-      '#options' => meetup_events_get_numeric_fields_for_type($type, 'number_float'),
-      '#default_value' => $settings[$type]["venue_lat"],
-    );
-
-    $form["meetup_events"][$type]["venue_lon"] = array(
-      '#title' => t("Venue Longitude Field"),
-      '#description' => 'Which numeric field should we use for Longitude to force the position of the map marker (optional)',
-      '#type' => 'select',
-      '#options' => meetup_events_get_numeric_fields_for_type($type, 'number_float'),
-      '#default_value' => $settings[$type]["venue_lon"],
-    );
-
     $form["meetup_events"][$type]["body"] = array(
       '#title' => t("Body Contents"),
       '#description' => 'The body content which will be synced to meetup (can use tokens if enabled)',
@@ -254,25 +227,6 @@ function meetup_events_admin_settings() {
     '#title' => t('Meetup Group URL'),
     '#default_value' => $api["group_url"],
     '#description' => t('The meetup group url. This will be the name of your group after http://meetup.com/<u><b>Group-URL</b></u>'),
-  );
-
-  $form['meetup_api']['oauth_key'] = array(
-    '#type' => 'textfield',
-    '#title' => t('OAuth Key'),
-    '#default_value' => $api["oauth_key"],
-    '#description' => t('If you want to enable RSVP dynamic widgets, you need to register for an oauth id at meetup and add it here'),
-  );
-
-  $api["opts"] = ($api["opts"]) ? $api["opts"] : array();
-
-  $form['meetup_api']['opts'] = array(
-    '#title' => t('Advanced Options'),
-    '#type' => 'checkboxes',
-    '#options' => array(
-      'force_to_meetup' => 'Force RSVPs to Meetup.com',
-    ),
-    '#default_value' => $api["opts"],
-    '#description' => t('If your RSVPs require questions to be answered, you need to check this box to foce them to the meetup site to RSVP, otherwise you won\'t get that information.')
   );
 
   return system_settings_form($form);
