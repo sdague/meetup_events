@@ -74,6 +74,26 @@ function meetup_events_fetch_numeric($node, $vfield) {
 }
 
 /**
+ * Guess the venue idea base on known node location
+ */
+function meetup_events_guess_venueid(&$node, $fieldname) {
+  if (!$fieldname) {
+    return;
+  }
+  $loc = $node->$fieldname;
+  $loc_id = $loc['und'][0]["nid"];
+
+  $query = new EntityFieldQuery();
+  $entities = $query->entityCondition('entity_type', 'node')
+    ->propertyCondition('nid', $loc_id)
+    ->propertyCondition('status', 1)
+    ->range(0,1)
+    ->execute();
+  $refnode = node_load(array_shift(array_keys($entities['node'])));
+  $venue_id = meetup_events_fuzzy_match_venue($refnode->title);
+  return $venue_id;
+}
+/**
  * Fetch a date field and convert it to UTC datetime
  */
 function meetup_events_fetch_date($node, $dfield) {
@@ -133,6 +153,7 @@ function meetup_events_fuzzy_match_venue($name) {
       }
     }
   }
+  drupal_set_message("Warning: Couldn't find a recently used venue of the name $name. You will have to set meetup location manually");
 }
 
 function meetup_events_display_rsvp(&$node) {
@@ -151,7 +172,6 @@ function meetup_events_display_rsvp(&$node) {
     return;
   }
 
-  meetup_events_fuzzy_match_venue("Mole Mole");
   drupal_add_js(
     array('meetup_events' =>
       array(
@@ -170,7 +190,6 @@ function meetup_events_display_rsvp(&$node) {
     '#weight' => -10,
   );
   drupal_add_css(drupal_get_path('module', 'meetup_events') . '/css/meetup.css');
-  kpr($node);
 }
 
 /**
@@ -197,6 +216,7 @@ function meetup_events_options_for($type) {
   $options = array();
   $options["enabled"] = ($values[$type . "_enabled"][$type]) ? TRUE : FALSE;
   $options["date_field"] = $values[$type]["date_field"];
+  $options["venue_name_field"] = $values[$type]["venue_name_field"];
   $options["venue_field"] = $values[$type]["venue_field"];
   $options["venue_lat"] = $values[$type]["venue_lat"];
   $options["venue_lon"] = $values[$type]["venue_lon"];
@@ -276,19 +296,23 @@ function meetup_events_node_data($node) {
   if ($duration) {
     $data["duration"] = $duration * 1000;
   }
-
-  $venue = meetup_events_fetch_numeric($node, $options["venue_field"]);
-  if ($venue) {
-    $data["venue_id"] = $venue;
-    # lat / lon fetching, only work if there is valid venue and both are valid
-    $lat = meetup_events_fetch_numeric($node, $options["venue_lat"]);
-    $lon = meetup_events_fetch_numeric($node, $options["venue_lon"]);
-    if ($lat && $lon) {
-      $data["lat"] = $lat;
-      $data["lon"] = $lon;
+  $venue_id = meetup_events_guess_venueid($node, $options["venue_name_field"]);
+  if ($venue_id) {
+    $data["venue_id"] = $venue_id;
+  } else {
+    // Legacy Approach, which doesn't really work any more.
+    $venue = meetup_events_fetch_numeric($node, $options["venue_field"]);
+    if ($venue) {
+      $data["venue_id"] = $venue;
+      # lat / lon fetching, only work if there is valid venue and both are valid
+      $lat = meetup_events_fetch_numeric($node, $options["venue_lat"]);
+      $lon = meetup_events_fetch_numeric($node, $options["venue_lon"]);
+      if ($lat && $lon) {
+        $data["lat"] = $lat;
+        $data["lon"] = $lon;
+      }
     }
   }
-
   $request_data = http_build_query($data, '', '&');
 
   return $request_data;
@@ -315,12 +339,13 @@ function meetup_events_delete_event($id) {
 }
 
 function meetup_events_update_event($id, $node) {
+  $data = meetup_events_node_data($node);
   $options = array(
     'headers' => array(
       'Content-Type' => 'application/x-www-form-urlencoded',
       'Accept-Charset' => 'utf-8'),
     'method' => 'POST',
-    'data' => meetup_events_node_data($node)
+    'data' => $data,
   );
   $request_url = "https://api.meetup.com/2/event/$id";
 

@@ -120,6 +120,11 @@ function meetup_events_get_settings() {
       );
     }
 
+    // this may not be set yet
+    if (!array_key_exists($settings[$type], 'venue_name_field')) {
+      $settings['venue_name_field'] = NULL;
+    }
+
   }
 
   return $settings;
@@ -172,9 +177,9 @@ function meetup_events_admin_settings() {
 
     $form["meetup_events"][$type]["venue_name_field"] = array(
       '#title' => t("Venue Name Field"),
-      '#description' => 'Which numeric field should we use for Name of the venue'),
+      '#description' => 'Which numeric field should we use for Name of the venue',
       '#type' => 'select',
-      '#options' => meetup_events_get_numeric_fields_for_type($type, 'number_integer'),
+      '#options' => meetup_events_get_numeric_fields_for_type($type, 'node_reference'),
       '#default_value' => $settings[$type]["venue_name_field"],
     );
 
