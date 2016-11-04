@@ -121,6 +121,7 @@ function meetup_events_display_rsvp(&$node) {
 
   # only bother doing anything on nodes that are actually in meetup
   $meetup_id = meetup_events_get_meetupid($node->nid);
+  # drupal_set_message("Meetup id: ". $meetup_id);
   if (!$meetup_id) {
     return;
   }
@@ -136,11 +137,14 @@ function meetup_events_display_rsvp(&$node) {
 
   drupal_add_js(drupal_get_path('module', 'meetup_events') . '/js/rsvp.js');
   $node->content['meetup_rsvp'] = array(
-    '#value' => '<a href="http://www.meetup.com/' .
+    '#markup' => '<a href="http://www.meetup.com/' .
       $api["group_url"] . '/events/' . $meetup_id .
-      '/" data-event="' . $meetup_id . '" class="mu-rsvp-btn">RSVP</a>',
+      '/" data-event="' . $meetup_id . '" class="mu-rsvp-btn">' .
+      '<button class="meetup_events">RSVP on Meetup</button></a>',
     '#weight' => -10,
   );
+  drupal_add_css(drupal_get_path('module', 'meetup_events') . '/css/meetup.css');
+  kpr($node);
 }
 
 /**
@@ -156,6 +160,10 @@ function meetup_events_node_update($node) {
   if (meetup_events_is_type_syncable($node->type)) {
     meetup_events_sync_event($node);
   }
+}
+
+function meetup_events_node_view($node, $view_mode, $langcode) {
+  meetup_events_display_rsvp($node);
 }
 
 function meetup_events_options_for($type) {
