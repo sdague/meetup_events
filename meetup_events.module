@@ -110,6 +110,31 @@ function meetup_events_fetch_duration($node, $dfield) {
   return $duration;
 }
 
+function meetup_events_fuzzy_match_venue($name) {
+  $api = variable_get('meetup_api', array());
+  $data = array(
+    "key" => $api["key"],
+    "sign" => "true"
+  );
+  $payload = http_build_query($data, '', '&');
+  $options = array(
+    'headers' => array(
+      'Content-Type' => 'application/x-www-form-urlencoded',
+      'Accept-Charset' => 'utf-8'),
+    'data' => $payload
+  );
+  $request_url = "https://api.meetup.com/" . $api["group_url"] . "/venues?" . $payload;
+  $res = drupal_http_request($request_url, $options);
+  if ($res->data) {
+    $json = drupal_json_decode($res->data);
+    foreach ($json as $venue) {
+      if ($venue['name'] == $name) {
+        return $venue['id'];
+      }
+    }
+  }
+}
+
 function meetup_events_display_rsvp(&$node) {
   $api = variable_get('meetup_api', array());
 
@@ -126,6 +151,7 @@ function meetup_events_display_rsvp(&$node) {
     return;
   }
 
+  meetup_events_fuzzy_match_venue("Mole Mole");
   drupal_add_js(
     array('meetup_events' =>
       array(

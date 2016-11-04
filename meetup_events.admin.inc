@@ -113,6 +113,7 @@ function meetup_events_get_settings() {
       $settings[$type] = array(
         'date_field' => NULL,
         'body' => t("Come to our awesome meetup!"),
+        'venue_name_field' => NULL,
         'venue_field' => NULL,
         'venue_lat' => NULL,
         'venue_lon' => NULL,
@@ -167,6 +168,14 @@ function meetup_events_admin_settings() {
       '#type' => 'select',
       '#options' => meetup_events_get_date_fields_for_type($type),
       '#default_value' => $settings[$type]["date_field"],
+    );
+
+    $form["meetup_events"][$type]["venue_name_field"] = array(
+      '#title' => t("Venue Name Field"),
+      '#description' => 'Which numeric field should we use for Name of the venue'),
+      '#type' => 'select',
+      '#options' => meetup_events_get_numeric_fields_for_type($type, 'number_integer'),
+      '#default_value' => $settings[$type]["venue_name_field"],
     );
 
     $form["meetup_events"][$type]["venue_field"] = array(
