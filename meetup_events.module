@@ -135,14 +135,7 @@ function meetup_events_display_rsvp(&$node) {
     return;
   }
 
-  drupal_add_js(
-    array('meetup_events' =>
-      array(
-        'force_to_meetup' => ($api["opts"]["force_to_meetup"]) ? TRUE : FALSE,
-        'oauth_key' => $api["oauth_key"])
-    ),
-    'setting'
-  );
+  # meetup_events_node_data($node);
 
   drupal_add_js(drupal_get_path('module', 'meetup_events') . '/js/rsvp.js');
   $node->content['meetup_rsvp'] = array(
@@ -226,6 +219,30 @@ function meetup_events_get_meetupid($nid) {
   }
 }
 
+function meetup_events_absolute_url($txt, $base_url) {
+  $needles = array('href="', 'src="', 'background="');
+  $new_txt = '';
+  $base_url = rtrim($base_url, '/');
+  $new_base_url = $base_url;
+  $base_url_parts = parse_url($base_url);
+
+  foreach ($needles as $needle) {
+    while ($pos = strpos($txt, $needle)) {
+      $pos += strlen($needle);
+      if (substr($txt, $pos, 7) != 'http://' && substr($txt, $pos, 8) != 'https://' && substr($txt, $pos, 6) != 'ftp://' && substr($txt, $pos, 9) != 'mailto://' && substr($txt, $pos, 2) != '//') {
+        $new_txt .= substr($txt, 0, $pos) . $new_base_url;
+      }
+      else {
+        $new_txt .= substr($txt, 0, $pos);
+      }
+      $txt = substr($txt, $pos);
+    }
+    $txt = $new_txt . $txt;
+    $new_txt = '';
+  }
+  return $txt;
+}
+
 function meetup_events_node_data($node) {
   // This is a hack, but it works. There should be a way to do timezone
   // gymnastics on the DateTime field, but I'm not sure what that is yet.
@@ -252,6 +269,15 @@ function meetup_events_node_data($node) {
     "time" => $date->getTimestamp() * 1000,
   );
 
+  // from https://www.drupal.org/project/rel_to_abs but embedded here to
+  // prevent need for another module.
+  $lang = language_default();
+  $front = url('<front>', array(
+             'absolute' => TRUE,
+             'language' => $lang
+           ));
+  $data['description'] = meetup_events_absolute_url($data['description'], 'https://mhvlug.org');
+
   $duration = meetup_events_fetch_duration($node, $options["date_field"]);
   if ($duration) {
     $data["duration"] = $duration * 1000;
@@ -263,6 +289,7 @@ function meetup_events_node_data($node) {
   }
 
   $request_data = http_build_query($data, '', '&');
+  # kpr([$request_data]);
 
   return $request_data;
 }
