@@ -276,7 +276,7 @@ function meetup_events_node_data($node) {
              'absolute' => TRUE,
              'language' => $lang
            ));
-  $data['description'] = meetup_events_absolute_url($data['description'], 'https://mhvlug.org');
+  $data['description'] = meetup_events_absolute_url($data['description'], $front);
 
   $duration = meetup_events_fetch_duration($node, $options["date_field"]);
   if ($duration) {
