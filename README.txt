@@ -25,20 +25,11 @@ numeric group id (which you can discover via the API console).
 
 VENUES
 
-Meetup has no way of creating the venues programatically, which is
-probably good.
+As of 7.x-2.x meetup_events heuristically maps venues. There is a call
+in the meetup API that returns the most recent venues that you have
+used.
 
-So the basic flow is as follows:
-* create the event on drupal
-* see that the event was synced to meetup.com
-* set a venue on meetup.com for the event
-* copy that venue id back to a cck field somewhere in drupal
-
-If you're using a location type which is a node reference from your
-events, this works out very well, as you need to build this location
--> venue link only once, future events at that venue will
-automatically get synced.
-
-Additional lat and lon fields can be provided if the venue id doesn't
-geocode sanely.
-
+You can specify a venue_name_field (which is current only allowed to
+be a node_reference). If the title of the location node matches one of
+the recently used Venues, the meetup venue will be set to it. If not,
+it will not be set (or changed).
