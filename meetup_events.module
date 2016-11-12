@@ -331,7 +331,10 @@ function meetup_events_update_event($id, $node) {
   if ($data->id) {
     drupal_set_message("Updated on <a href='" . $data->event_url .  "'>Meetup</a>");
   } else {
-    drupal_set_message("Failed to update Meetup, you should try again later");
+    drupal_set_message("Failed to update event on Meetup", "error");
+    foreach ($data->errors as $field => $err) {
+      drupal_set_message("$field => $err", "error");
+    }
   }
 }
 
@@ -356,6 +359,9 @@ function meetup_events_create_event($node) {
     meetup_events_save_meetupid($node->nid, $data->id);
     drupal_set_message("Saved to <a href='" . $data->event_url .  "'>Meetup</a>");
   } else {
-    drupal_set_message("Failed to save to Meetup, you should try again later");
+    drupal_set_message("Failed to update event on Meetup", "error");
+    foreach ($data->errors as $field => $err) {
+      drupal_set_message("$field => $err", "error");
+    }
   }
 }
